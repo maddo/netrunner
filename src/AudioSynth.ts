@@ -152,25 +152,30 @@ export class AudioSynth {
   }
 
   public async playHackEffect() {
-    console.log('Playing hack effect');
+    console.log('AudioSynth: Playing hack effect');
     if (!this.audioContext || !this.mainGainNode) {
-      console.log('No audio context or gain node');
+      console.warn('AudioSynth: No audio context or gain node');
       return;
     }
 
     try {
       const osc = this.audioContext.createOscillator();
+      const gainNode = this.audioContext.createGain();
+      
+      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(880, this.audioContext.currentTime);
       osc.frequency.exponentialRampToValueAtTime(110, this.audioContext.currentTime + 0.1);
       
-      osc.connect(this.mainGainNode);
+      osc.connect(gainNode);
+      gainNode.connect(this.mainGainNode);
+      
       osc.start();
       osc.stop(this.audioContext.currentTime + 0.1);
       
-      console.log('Hack effect started');
+      console.log('AudioSynth: Hack effect started');
     } catch (error) {
-      console.error('Error playing hack effect:', error);
+      console.error('AudioSynth: Error playing hack effect:', error);
     }
   }
 

@@ -427,6 +427,19 @@ function AppContent() {
     setIsPlaying(!isPlaying);
   };
 
+  const handleCommand = (commandName: string) => {
+    console.log('Command executed:', commandName);
+    
+    if (audioContext) {
+      audioContext.playHackEffect();
+      console.log('Playing hack effect');
+    } else {
+      console.warn('AudioSynth not available');
+    }
+    
+    // Your existing command logic here
+  };
+
   return (
     <div className="App">
       {gameState === 'start' ? (
@@ -498,7 +511,10 @@ function AppContent() {
                 <h3>AVAILABLE COMMANDS:</h3>
                 {commands.map((cmd, cmdIndex) => (
                   <div key={cmd.name} className="command-row">
-                    <span className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}>
+                    <span 
+                      className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}
+                      onClick={() => handleCommand(cmd.name)}
+                    >
                       {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
                       {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
                     </span>
