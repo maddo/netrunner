@@ -1,28 +1,23 @@
 export class AudioSynth {
-  private audioContext: AudioContext | null = null;
-  private mainGainNode: GainNode | null = null;
+  private audioContext: AudioContext;
+  private gainNode: GainNode;
   private isPlaying: boolean = false;
   private interval: number | null = null;
 
   constructor() {
-    console.log('AudioSynth constructed');
+    console.log('Creating new AudioSynth instance');
+    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    this.gainNode = this.audioContext.createGain();
+    this.gainNode.connect(this.audioContext.destination);
+    console.log('AudioContext created, state:', this.audioContext.state);
   }
 
   private async init() {
-    if (!this.audioContext) {
-      console.log('Initializing audio context...');
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      this.mainGainNode = this.audioContext.createGain();
-      this.mainGainNode.connect(this.audioContext.destination);
-      this.mainGainNode.gain.value = 0.3;
-      
-      // Ensure audio context is running
-      if (this.audioContext.state !== 'running') {
-        console.log('Resuming audio context...');
-        await this.audioContext.resume();
-      }
-      console.log('Audio context state:', this.audioContext.state);
+    if (this.audioContext.state !== 'running') {
+      console.log('Resuming audio context...');
+      await this.audioContext.resume();
     }
+    console.log('Audio context state:', this.audioContext.state);
   }
 
   public async start() {
@@ -33,7 +28,7 @@ export class AudioSynth {
     }
     
     await this.init();
-    if (!this.audioContext) {
+    if (this.audioContext.state !== 'running') {
       console.error('Failed to initialize audio context');
       return;
     }
@@ -59,7 +54,7 @@ export class AudioSynth {
   }
 
   private playDarkArpeggio(time: number) {
-    if (!this.audioContext || !this.mainGainNode) {
+    if (!this.audioContext || !this.gainNode) {
       console.error('Cannot play: audio context or gain node not initialized');
       return;
     }
@@ -84,7 +79,7 @@ export class AudioSynth {
       gainNode.gain.exponentialRampToValueAtTime(0.001, time + i * 0.2 + 0.8);
 
       osc.connect(gainNode);
-      gainNode.connect(this.mainGainNode!);
+      gainNode.connect(this.gainNode);
 
       osc.start(time + i * 0.2);
       osc.stop(time + i * 0.2 + 1);
@@ -101,19 +96,19 @@ export class AudioSynth {
   }
 
   public setVolume(volume: number) {
-    if (this.mainGainNode) {
-      this.mainGainNode.gain.value = volume;
+    if (this.gainNode) {
+      this.gainNode.gain.value = volume;
     }
   }
 
   private createDrumSound(frequency: number, decay: number, time: number) {
-    if (!this.audioContext || !this.mainGainNode) return;
+    if (!this.audioContext || !this.gainNode) return;
 
     const oscillator = this.audioContext.createOscillator();
     const gainNode = this.audioContext.createGain();
     
     oscillator.connect(gainNode);
-    gainNode.connect(this.mainGainNode);
+    gainNode.connect(this.gainNode);
 
     oscillator.frequency.setValueAtTime(frequency, time);
     oscillator.frequency.exponentialRampToValueAtTime(1, time + decay);
@@ -126,7 +121,7 @@ export class AudioSynth {
   }
 
   private createSynthNote(frequency: number, time: number, duration: number, type: OscillatorType) {
-    if (!this.audioContext || !this.mainGainNode) return;
+    if (!this.audioContext || !this.gainNode) return;
 
     const oscillator = this.audioContext.createOscillator();
     const gainNode = this.audioContext.createGain();
@@ -141,7 +136,7 @@ export class AudioSynth {
 
     oscillator.connect(filter);
     filter.connect(gainNode);
-    gainNode.connect(this.mainGainNode);
+    gainNode.connect(this.gainNode);
 
     gainNode.gain.setValueAtTime(0, time);
     gainNode.gain.linearRampToValueAtTime(0.3, time + 0.1);
@@ -151,37 +146,56 @@ export class AudioSynth {
     oscillator.stop(time + duration);
   }
 
-  public async playHackEffect() {
-    console.log('AudioSynth: Playing hack effect');
-    if (!this.audioContext || !this.mainGainNode) {
-      console.warn('AudioSynth: No audio context or gain node');
-      return;
-    }
-
+  async playHackEffect() {
     try {
-      const osc = this.audioContext.createOscillator();
+      // Ensure audio context is running
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+
+      const startTime = this.audioContext.currentTime;
+      
+      // Create oscillators for a more complex sound
+      const osc1 = this.audioContext.createOscillator();
+      const osc2 = this.audioContext.createOscillator();
       const gainNode = this.audioContext.createGain();
+
+      // Configure oscillators
+      osc1.type = 'sawtooth';
+      osc2.type = 'square';
       
-      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(880, this.audioContext.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(110, this.audioContext.currentTime + 0.1);
+      // Set frequencies
+      osc1.frequency.setValueAtTime(880, startTime);
+      osc1.frequency.exponentialRampToValueAtTime(220, startTime + 0.1);
       
-      osc.connect(gainNode);
-      gainNode.connect(this.mainGainNode);
+      osc2.frequency.setValueAtTime(440, startTime);
+      osc2.frequency.exponentialRampToValueAtTime(110, startTime + 0.1);
+
+      // Configure gain envelope
+      gainNode.gain.setValueAtTime(0.3, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + 0.1);
+
+      // Connect everything
+      osc1.connect(gainNode);
+      osc2.connect(gainNode);
+      gainNode.connect(this.gainNode);
+
+      // Start and stop the sound
+      osc1.start(startTime);
+      osc2.start(startTime);
       
-      osc.start();
-      osc.stop(this.audioContext.currentTime + 0.1);
-      
-      console.log('AudioSynth: Hack effect started');
+      osc1.stop(startTime + 0.1);
+      osc2.stop(startTime + 0.1);
+
+      console.log('Hack effect played');
     } catch (error) {
-      console.error('AudioSynth: Error playing hack effect:', error);
+      console.error('Error playing hack effect:', error);
     }
   }
 
   public playSuccessEffect() {
-    if (!this.audioContext) this.init();
-    if (!this.audioContext || !this.mainGainNode) return;
+    if (this.audioContext.state !== 'running') this.init();
+    if (!this.audioContext || !this.gainNode) return;
 
     const time = this.audioContext.currentTime;
     
@@ -198,7 +212,7 @@ export class AudioSynth {
       gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
       
       osc.connect(gain);
-      gain.connect(this.mainGainNode!);
+      gain.connect(this.gainNode);
       
       osc.start(time + i * 0.05);
       osc.stop(time + 0.3);
@@ -206,8 +220,8 @@ export class AudioSynth {
   }
 
   public playFailEffect() {
-    if (!this.audioContext) this.init();
-    if (!this.audioContext || !this.mainGainNode) return;
+    if (this.audioContext.state !== 'running') this.init();
+    if (!this.audioContext || !this.gainNode) return;
 
     const time = this.audioContext.currentTime;
     
@@ -222,14 +236,14 @@ export class AudioSynth {
     gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
     
     osc.connect(gain);
-    gain.connect(this.mainGainNode);
+    gain.connect(this.gainNode);
     
     osc.start(time);
     osc.stop(time + 0.2);
   }
 
   public playStartupSequence() {
-    if (!this.audioContext) this.init();
+    if (this.audioContext.state !== 'running') this.init();
     if (!this.audioContext) return;
 
     const time = this.audioContext.currentTime;
@@ -263,7 +277,7 @@ export class AudioSynth {
       
       osc.connect(filter);
       filter.connect(gain);
-      gain.connect(this.mainGainNode || this.audioContext!.destination);
+      gain.connect(this.gainNode || this.audioContext!.destination);
       
       osc.start(time + i * 0.15);
       osc.stop(time + i * 0.15 + 0.3);
@@ -281,7 +295,7 @@ export class AudioSynth {
     sweepGain.gain.exponentialRampToValueAtTime(0.01, time + 1.2);
     
     sweepOsc.connect(sweepGain);
-    sweepGain.connect(this.mainGainNode || this.audioContext.destination);
+    sweepGain.connect(this.gainNode || this.audioContext.destination);
     
     sweepOsc.start(time + 0.6);
     sweepOsc.stop(time + 1.2);

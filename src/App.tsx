@@ -440,6 +440,38 @@ function AppContent() {
     // Your existing command logic here
   };
 
+  useEffect(() => {
+    console.log('Setting up target button listeners');
+    
+    // Add click listeners to all target buttons
+    const targetButtons = document.querySelectorAll('.target-btn');
+    console.log('Found target buttons:', targetButtons.length);
+
+    const handleTargetClick = (e: Event) => {
+      console.log('Target button clicked');
+      console.log('AudioSynth available in click handler:', !!audioContext);
+      
+      if (!audioContext) {
+        console.warn('No AudioSynth available');
+        return;
+      }
+
+      // Just call the playHackEffect method directly
+      audioContext.playHackEffect();
+    };
+
+    targetButtons.forEach(button => {
+      button.addEventListener('click', handleTargetClick);
+    });
+
+    // Cleanup
+    return () => {
+      targetButtons.forEach(button => {
+        button.removeEventListener('click', handleTargetClick);
+      });
+    };
+  }, [audioContext]);
+
   return (
     <div className="App">
       {gameState === 'start' ? (
@@ -665,6 +697,39 @@ function App() {
       console.log('Document clicked at:', e.target);
     });
 
+    // Debug log to check AudioContext on mount
+    console.log('App mounted, AudioSynth available:', !!audioContext);
+    if (audioContext) {
+      console.log('AudioSynth methods:', Object.keys(audioContext));
+    }
+
+    const handleTargetClick = (e: Event) => {
+      console.log('Target button clicked');
+      console.log('AudioSynth available in click handler:', !!audioContext);
+      
+      if (!audioContext) {
+        console.warn('No AudioSynth available');
+        return;
+      }
+
+      // Just call the playHackEffect method directly
+      audioContext.playHackEffect();
+    };
+
+    // Add click listeners to all target buttons
+    const targetButtons = document.querySelectorAll('.target-btn');
+    console.log('Found target buttons:', targetButtons.length);
+
+    targetButtons.forEach(button => {
+      button.addEventListener('click', handleTargetClick);
+    });
+
+    // Cleanup
+    return () => {
+      targetButtons.forEach(button => {
+        button.removeEventListener('click', handleTargetClick);
+      });
+    };
   }, [audioContext]);
 
   return (

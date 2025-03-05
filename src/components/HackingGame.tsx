@@ -1,37 +1,47 @@
-import { useContext, useRef } from 'react';
+import { useContext } from 'react';
 import { AudioContext } from '../AudioContext';
 
-interface HackingGameProps {
-  // Add your props here
+interface Command {
+  name: string;
+  power: number;
+  cost: number;
 }
 
-export const HackingGame: React.FC<HackingGameProps> = (props) => {
-  const audio = useContext(AudioContext);
+interface SecurityLayer {
+  name: string;
+  difficulty: number;
+  breached: boolean;
+}
 
-  const handleHackAttempt = (node: any) => {
-    // Play the initial hack sound
-    audio?.playHackEffect();
+interface HackingGameProps {
+  // Add your props here if needed
+}
 
-    // Your existing hack logic here
-    const attemptHack = async () => {
-      try {
-        // Your hack attempt logic
-        const success = true; // Replace with your actual success check
-        
-        // After the hack resolves
-        setTimeout(() => {
-          if (success) {
-            audio?.playSuccessEffect();
-          } else {
-            audio?.playFailEffect();
-          }
-        }, 500); // Adjust timing based on your hack animation duration
-      } catch (error) {
-        audio?.playFailEffect();
+const HackingGame: React.FC<HackingGameProps> = () => {
+  const audioSynth = useContext(AudioContext);
+
+  const handleAttack = async (command: Command, target: SecurityLayer) => {
+    console.log('Attack initiated:', command.name, 'on', target.name);
+    
+    if (!audioSynth) {
+      console.log('Audio synth not available');
+      return;
+    }
+
+    // Play attack sound
+    await audioSynth.playHackEffect();
+
+    // Simulate attack logic
+    const attackSucceeded = Math.random() > 0.5; // Replace with actual logic
+
+    // Play result sound after a short delay
+    setTimeout(() => {
+      if (attackSucceeded) {
+        audioSynth.playSuccessEffect();
+      } else {
+        audioSynth.playFailEffect();
       }
-    };
-
-    attemptHack();
+    }, 200);
   };
 
   return (
@@ -40,4 +50,6 @@ export const HackingGame: React.FC<HackingGameProps> = (props) => {
       <div>Hacking Game Content</div>
     </div>
   );
-}; 
+};
+
+export default HackingGame; 

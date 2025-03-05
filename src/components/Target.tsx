@@ -14,41 +14,21 @@ export const Target: React.FC<TargetProps> = ({
   disabled, 
   className = '' 
 }) => {
-  const audio = useContext(AudioContext);
-  console.log('Target rendered, audio available:', !!audio); // Debug audio context
+  const audioSynth = useContext(AudioContext);
 
-  const handleClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    console.log('Target button clicked:', title);
-    console.log('Audio context available:', !!audio);
-
-    if (!audio) {
-      console.error('No audio context available for sound effects');
-      return;
+  const handleClick = async () => {
+    console.log('Target clicked:', title);
+    
+    // Play sound first
+    if (audioSynth) {
+      console.log('Playing hack effect');
+      await audioSynth.playHackEffect();
+    } else {
+      console.warn('No AudioSynth available');
     }
 
-    try {
-      // Play hack sound immediately
-      console.log('Attempting to play hack effect...');
-      await audio.playHackEffect();
-      console.log('Hack effect played');
-
-      // Call the original onClick handler
-      console.log('Calling original onClick...');
-      const result = await onClick();
-      console.log('Hack result:', result);
-
-      if (result?.success) {
-        console.log('Playing success effect...');
-        await audio.playSuccessEffect();
-      } else {
-        console.log('Playing fail effect...');
-        await audio.playFailEffect();
-      }
-    } catch (error) {
-      console.error('Error during hack attempt:', error);
-      audio.playFailEffect();
-    }
+    // Then call the original onClick handler
+    onClick();
   };
 
   return (
@@ -57,10 +37,8 @@ export const Target: React.FC<TargetProps> = ({
       onClick={handleClick}
       disabled={disabled}
       title={title}
-      onMouseDown={() => console.log('Button mouse down')} // Extra debug
-      onMouseUp={() => console.log('Button mouse up')} // Extra debug
     >
-      {title}
+      ▶
     </button>
   );
 }; 
