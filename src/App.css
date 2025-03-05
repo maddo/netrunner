@@ -650,4 +650,177 @@
 /* Add a hover effect for the tutorial box */
 .tutorial-content:hover {
   box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
+}
+
+/* Add these new styles for the start screen */
+
+.start-screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: var(--background-color);
+  padding: 20px;
+  position: relative;
+  gap: 50px;
+}
+
+.title-container {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.game-title {
+  font-size: 4em;
+  color: var(--primary-color);
+  font-family: 'Share Tech Mono', monospace;
+  text-shadow: 
+    0 0 5px var(--primary-color),
+    0 0 10px var(--primary-color),
+    0 0 20px var(--primary-color);
+  margin: 0;
+  position: relative;
+}
+
+.glitch-container {
+  position: relative;
+}
+
+.glitch {
+  position: relative;
+}
+
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.glitch::before {
+  left: 2px;
+  text-shadow: -2px 0 #ff00ff;
+  animation: glitch-1 2s infinite linear alternate-reverse;
+}
+
+.glitch::after {
+  left: -2px;
+  text-shadow: 2px 0 #00ffff;
+  animation: glitch-2 3s infinite linear alternate-reverse;
+}
+
+.subtitle {
+  color: var(--secondary-color);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.2em;
+  margin-top: 10px;
+  opacity: 0.8;
+}
+
+.menu-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.start-button {
+  background: transparent;
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 15px 30px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.2em;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.start-button:hover {
+  background: rgba(0, 255, 0, 0.1);
+  transform: scale(1.05);
+}
+
+.start-button:hover .button-glitch {
+  display: block;
+}
+
+.button-glitch {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(0, 255, 0, 0.3),
+    transparent
+  );
+  animation: button-glitch 1s linear infinite;
+}
+
+.flavor-text {
+  color: var(--secondary-color);
+  font-family: 'Share Tech Mono', monospace;
+  text-align: center;
+  opacity: 0.7;
+  position: absolute;
+  bottom: 40px;
+}
+
+.flavor-text p {
+  margin: 5px 0;
+}
+
+.flavor-text .author {
+  color: var(--primary-color);
+  margin-top: 10px;
+  font-style: italic;
+}
+
+@keyframes glitch-1 {
+  0% { clip-path: inset(20% 0 30% 0); }
+  20% { clip-path: inset(60% 0 1% 0); }
+  40% { clip-path: inset(25% 0 58% 0); }
+  60% { clip-path: inset(91% 0 1% 0); }
+  80% { clip-path: inset(1% 0 98% 0); }
+  100% { clip-path: inset(40% 0 11% 0); }
+}
+
+@keyframes glitch-2 {
+  0% { clip-path: inset(30% 0 20% 0); }
+  20% { clip-path: inset(1% 0 60% 0); }
+  40% { clip-path: inset(58% 0 25% 0); }
+  60% { clip-path: inset(1% 0 91% 0); }
+  80% { clip-path: inset(98% 0 1% 0); }
+  100% { clip-path: inset(11% 0 40% 0); }
+}
+
+@keyframes button-glitch {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Add responsive design */
+@media (max-width: 768px) {
+  .game-title {
+    font-size: 3em;
+  }
+  
+  .menu-container {
+    padding: 0 20px;
+  }
+  
+  .start-button {
+    font-size: 1em;
+    padding: 12px 24px;
+  }
 } 

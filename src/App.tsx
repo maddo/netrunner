@@ -24,6 +24,7 @@ interface TutorialStep {
 }
 
 function App() {
+  const [gameState, setGameState] = useState<'start' | 'tutorial' | 'playing'>('start');
   const [securityLayers, setSecurityLayers] = useState<SecurityLayer[]>([
     { name: "Firewall", difficulty: 3, broken: false },
     { name: "Encryption", difficulty: 4, broken: false },
@@ -259,147 +260,163 @@ function App() {
     };
   }, [tutorialStep, showTutorial]);
 
+  const startTutorial = () => {
+    setGameState('tutorial');
+    setShowTutorial(true);
+    setTutorialStep(0);
+  };
+
+  const startGame = () => {
+    setGameState('playing');
+    setShowTutorial(false);
+    setTutorialComplete(true);
+  };
+
+  // Add start screen component
+  const StartScreen = () => (
+    <div className="start-screen">
+      <div className="title-container">
+        <div className="glitch-container">
+          <h1 className="game-title glitch" data-text="NETRUNNER">NETRUNNER</h1>
+        </div>
+        <div className="subtitle">SECURITY BREACH v2.0.2.0</div>
+      </div>
+      
+      <div className="menu-container">
+        <button 
+          className="start-button"
+          onClick={startTutorial}
+        >
+          <span className="button-text">START WITH TUTORIAL</span>
+          <span className="button-glitch"></span>
+        </button>
+        
+        <button 
+          className="start-button"
+          onClick={startGame}
+        >
+          <span className="button-text">DIRECT SYSTEM ACCESS</span>
+          <span className="button-glitch"></span>
+        </button>
+      </div>
+
+      <div className="flavor-text">
+        <p>"Breaking through ICE isn't about brute force...</p>
+        <p>it's about finding the right frequency of chaos."</p>
+        <p className="author">- Anonymous Netrunner, 2020</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="App">
       <div className="crt-overlay"></div>
       <div className="scan-lines"></div>
-      {showTutorial && (
-        <div className="tutorial-overlay">
-          <div className="tutorial-content">
-            <div className="tutorial-header">
-              <span className="tutorial-title">TUTORIAL</span>
+      
+      {gameState === 'start' ? (
+        <StartScreen />
+      ) : (
+        <div className="terminal-window">
+          <div className="terminal-header">
+            <span className="blink">[ARASAKA SECURITY BREACH IN PROGRESS]</span>
+            <div className="system-info">
+              <div className="status-bars">
+                <div className="status-bar">
+                  <span>TRACE: {traceLevel}%</span>
+                  <div className="progress-bar trace">
+                    <div 
+                      className="progress-fill" 
+                      style={{ width: `${traceLevel}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div className="status-bar">
+                  <span>POWER: {playerPower.current}/{playerPower.max}</span>
+                  <div className="progress-bar power">
+                    <div 
+                      className="progress-fill" 
+                      style={{ width: `${(playerPower.current / playerPower.max) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="terminal-content">
+            <div className="security-layers">
+              <h3>SECURITY LAYERS:</h3>
+              {securityLayers.map((layer, i) => (
+                <div 
+                  key={layer.name} 
+                  className={`layer ${layer.broken ? 'broken' : ''} ${layer.animating ? layer.animating : ''}`}
+                >
+                  {layer.name} [DIFFICULTY: {layer.difficulty}]
+                  {layer.broken && ' [BREACHED]'}
+                </div>
+              ))}
+            </div>
+
+            <div className="command-list">
+              <h3>AVAILABLE COMMANDS:</h3>
+              {commands.map((cmd, cmdIndex) => (
+                <div key={cmd.name} className="command-row">
+                  <span className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}>
+                    {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
+                    {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
+                  </span>
+                  {cmd.isAvailable && !gameOver && playerPower.current >= cmd.powerCost && (
+                    <div className="target-buttons">
+                      {securityLayers.map((layer, layerIndex) => (
+                        !layer.broken && (
+                          <button
+                            key={layer.name}
+                            onClick={() => executeCommand(cmdIndex, layerIndex)}
+                            className="target-btn"
+                            title={`Attack ${layer.name}`}
+                          >
+                            ▶
+                          </button>
+                        )
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="terminal-logs">
+              {logs.map((log, i) => (
+                <p key={i} className="log-entry">{log}</p>
+              ))}
+            </div>
+
+            {gameOver && (
+              <div className={`game-over ${success ? 'success' : 'failure'}`}>
+                {success ? 'HACK SUCCESSFUL' : 'HACK FAILED'}
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="retry-btn"
+                >
+                  RETRY
+                </button>
+              </div>
+            )}
+
+            {tutorialComplete && (
               <button 
-                className="tutorial-quit-btn"
+                className="tutorial-restart-btn"
                 onClick={() => {
-                  setShowTutorial(false);
-                  setTutorialComplete(true);
+                  setShowTutorial(true);
+                  setTutorialStep(0);
                 }}
-                title="Skip Tutorial"
               >
-                ✕
-              </button>
-            </div>
-            <div className="tutorial-message">
-              {tutorialSteps[tutorialStep].message}
-            </div>
-            {tutorialSteps[tutorialStep].requireClick && (
-              <button 
-                className="tutorial-next-btn"
-                onClick={handleTutorialNext}
-              >
-                CONTINUE
+                SHOW TUTORIAL
               </button>
             )}
           </div>
-          {tutorialSteps[tutorialStep].highlight && (
-            <div 
-              ref={highlightRef}
-              className="tutorial-highlight"
-            ></div>
-          )}
         </div>
       )}
-      
-      <div className="terminal-window">
-        <div className="terminal-header">
-          <span className="blink">[ARASAKA SECURITY BREACH IN PROGRESS]</span>
-          <div className="system-info">
-            <div className="status-bars">
-              <div className="status-bar">
-                <span>TRACE: {traceLevel}%</span>
-                <div className="progress-bar trace">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${traceLevel}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div className="status-bar">
-                <span>POWER: {playerPower.current}/{playerPower.max}</span>
-                <div className="progress-bar power">
-                  <div 
-                    className="progress-fill" 
-                    style={{ width: `${(playerPower.current / playerPower.max) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="terminal-content">
-          <div className="security-layers">
-            <h3>SECURITY LAYERS:</h3>
-            {securityLayers.map((layer, i) => (
-              <div 
-                key={layer.name} 
-                className={`layer ${layer.broken ? 'broken' : ''} ${layer.animating ? layer.animating : ''}`}
-              >
-                {layer.name} [DIFFICULTY: {layer.difficulty}]
-                {layer.broken && ' [BREACHED]'}
-              </div>
-            ))}
-          </div>
-
-          <div className="command-list">
-            <h3>AVAILABLE COMMANDS:</h3>
-            {commands.map((cmd, cmdIndex) => (
-              <div key={cmd.name} className="command-row">
-                <span className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}>
-                  {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
-                  {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
-                </span>
-                {cmd.isAvailable && !gameOver && playerPower.current >= cmd.powerCost && (
-                  <div className="target-buttons">
-                    {securityLayers.map((layer, layerIndex) => (
-                      !layer.broken && (
-                        <button
-                          key={layer.name}
-                          onClick={() => executeCommand(cmdIndex, layerIndex)}
-                          className="target-btn"
-                          title={`Attack ${layer.name}`}
-                        >
-                          ▶
-                        </button>
-                      )
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="terminal-logs">
-            {logs.map((log, i) => (
-              <p key={i} className="log-entry">{log}</p>
-            ))}
-          </div>
-
-          {gameOver && (
-            <div className={`game-over ${success ? 'success' : 'failure'}`}>
-              {success ? 'HACK SUCCESSFUL' : 'HACK FAILED'}
-              <button 
-                onClick={() => window.location.reload()} 
-                className="retry-btn"
-              >
-                RETRY
-              </button>
-            </div>
-          )}
-
-          {tutorialComplete && (
-            <button 
-              className="tutorial-restart-btn"
-              onClick={() => {
-                setShowTutorial(true);
-                setTutorialStep(0);
-              }}
-            >
-              SHOW TUTORIAL
-            </button>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
