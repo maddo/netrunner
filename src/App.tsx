@@ -578,11 +578,20 @@ function AppContent() {
                   <div className="status-bar">
                     <span>TRACE: {traceLevel}%</span>
                     <div className="progress-bar trace">
-                      <div
-                        className="progress-fill"
-                        style={{ width: `${traceLevel}%` }}
-                      ></div>
                       <span className="trace-icon phone">📱</span>
+                      <div className="network-nodes">
+                        {[...Array(10)].map((_, index) => (
+                          <div
+                            key={index}
+                            className={`node ${
+                              traceLevel > index * 10 ? "active" : ""
+                            }`}
+                          >
+                            <div className="node-dot" />
+                            {index < 9 && <div className="node-line" />}
+                          </div>
+                        ))}
+                      </div>
                       <span className="trace-icon police">👮</span>
                     </div>
                   </div>

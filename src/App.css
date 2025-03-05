@@ -527,6 +527,67 @@
 .progress-bar.trace {
   border-color: var(--secondary-color);
   position: relative;
+  height: 20px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  padding: 0 30px;
+}
+
+.network-nodes {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.node {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.node-dot {
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 0, 119, 0.2);
+  border: 2px solid var(--secondary-color);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.node.active .node-dot {
+  background: var(--secondary-color);
+  box-shadow: 0 0 10px var(--secondary-color);
+  animation: nodePulse 2s infinite;
+}
+
+.node-line {
+  flex: 1;
+  height: 2px;
+  background: rgba(255, 0, 119, 0.2);
+  margin: 0 2px;
+  transition: all 0.3s ease;
+}
+
+.node.active .node-line {
+  background: var(--secondary-color);
+  box-shadow: 0 0 5px var(--secondary-color);
+}
+
+@keyframes nodePulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px var(--secondary-color);
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px var(--secondary-color);
+  }
 }
 
 .trace-icon {
@@ -536,6 +597,7 @@
   font-size: 16px;
   text-shadow: 0 0 10px currentColor;
   animation: iconPulse 2s infinite;
+  z-index: 1;
 }
 
 .trace-icon.phone {
