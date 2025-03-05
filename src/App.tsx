@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { AudioSynth } from './AudioSynth';
+import { AudioProvider } from './AudioContext';
 
 interface SecurityLayer {
   name: string;
@@ -531,154 +532,156 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <AudioPlayer isPlaying={isPlaying} volume={volume} />
-      <div className="crt-overlay"></div>
-      <div className="scan-lines"></div>
-      
-      {gameState === 'start' ? (
-        <StartScreen />
-      ) : (
-        <>
-          <div className="terminal-window">
-            <div className="terminal-header">
-              <span className="blink">[ARASAKA SECURITY BREACH IN PROGRESS]</span>
-              <div className="system-info">
-                <div className="status-bars">
-                  <div className="status-bar">
-                    <span>TRACE: {traceLevel}%</span>
-                    <div className="progress-bar trace">
-                      <div 
-                        className="progress-fill" 
-                        style={{ width: `${traceLevel}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                  <div className="status-bar">
-                    <span>POWER: {playerPower.current}/{playerPower.max}</span>
-                    <div className="progress-bar power">
-                      <div 
-                        className="progress-fill" 
-                        style={{ width: `${(playerPower.current / playerPower.max) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button 
-                className="quit-to-menu-btn"
-                onClick={handleQuitClick}
-                title="Quit to Main Menu"
-              >
-                DISCONNECT
-              </button>
-            </div>
-
-            <div className="terminal-content">
-              <div className="security-layers">
-                <h3>SECURITY LAYERS:</h3>
-                {securityLayers.map((layer, i) => (
-                  <div 
-                    key={layer.name} 
-                    className={`layer ${layer.broken ? 'broken' : ''} ${layer.animating ? layer.animating : ''}`}
-                  >
-                    {layer.name} [DIFFICULTY: {layer.difficulty}]
-                    {layer.broken && ' [BREACHED]'}
-                  </div>
-                ))}
-              </div>
-
-              <div className="command-list">
-                <h3>AVAILABLE COMMANDS:</h3>
-                {commands.map((cmd, cmdIndex) => (
-                  <div key={cmd.name} className="command-row">
-                    <span className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}>
-                      {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
-                      {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
-                    </span>
-                    {cmd.isAvailable && !gameOver && playerPower.current >= cmd.powerCost && (
-                      <div className="target-buttons">
-                        {securityLayers.map((layer, layerIndex) => (
-                          !layer.broken && (
-                            <button
-                              key={layer.name}
-                              onClick={() => executeCommand(cmdIndex, layerIndex)}
-                              className="target-btn"
-                              title={`Attack ${layer.name}`}
-                            >
-                              ▶
-                            </button>
-                          )
-                        ))}
+    <AudioProvider>
+      <div className="App">
+        <AudioPlayer isPlaying={isPlaying} volume={volume} />
+        <div className="crt-overlay"></div>
+        <div className="scan-lines"></div>
+        
+        {gameState === 'start' ? (
+          <StartScreen />
+        ) : (
+          <>
+            <div className="terminal-window">
+              <div className="terminal-header">
+                <span className="blink">[ARASAKA SECURITY BREACH IN PROGRESS]</span>
+                <div className="system-info">
+                  <div className="status-bars">
+                    <div className="status-bar">
+                      <span>TRACE: {traceLevel}%</span>
+                      <div className="progress-bar trace">
+                        <div 
+                          className="progress-fill" 
+                          style={{ width: `${traceLevel}%` }}
+                        ></div>
                       </div>
-                    )}
+                    </div>
+                    <div className="status-bar">
+                      <span>POWER: {playerPower.current}/{playerPower.max}</span>
+                      <div className="progress-bar power">
+                        <div 
+                          className="progress-fill" 
+                          style={{ width: `${(playerPower.current / playerPower.max) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
-                ))}
-              </div>
-
-              <div className="terminal-logs">
-                {logs.map((log, i) => (
-                  <p key={i} className="log-entry">{log}</p>
-                ))}
-              </div>
-
-              {gameOver && (
-                <div className={`game-over ${success ? 'success' : 'failure'}`}>
-                  {success ? 'HACK SUCCESSFUL' : 'HACK FAILED'}
-                  <button 
-                    onClick={() => window.location.reload()} 
-                    className="retry-btn"
-                  >
-                    RETRY
-                  </button>
                 </div>
-              )}
-
-              {tutorialComplete && (
                 <button 
-                  className="tutorial-restart-btn"
-                  onClick={() => {
-                    setShowTutorial(true);
-                    setTutorialStep(0);
-                  }}
+                  className="quit-to-menu-btn"
+                  onClick={handleQuitClick}
+                  title="Quit to Main Menu"
                 >
-                  SHOW TUTORIAL
+                  DISCONNECT
                 </button>
-              )}
+              </div>
 
-              {gameMode?.type === 'tutorial' && (
-                <div className="tutorial-indicator">
-                  TRAINING MODE ACTIVE
+              <div className="terminal-content">
+                <div className="security-layers">
+                  <h3>SECURITY LAYERS:</h3>
+                  {securityLayers.map((layer, i) => (
+                    <div 
+                      key={layer.name} 
+                      className={`layer ${layer.broken ? 'broken' : ''} ${layer.animating ? layer.animating : ''}`}
+                    >
+                      {layer.name} [DIFFICULTY: {layer.difficulty}]
+                      {layer.broken && ' [BREACHED]'}
+                    </div>
+                  ))}
                 </div>
-              )}
-            </div>
-          </div>
-          {showQuitDialog && <QuitDialog />}
-        </>
-      )}
 
-      <div className="audio-controls">
-        <button 
-          className={`play-button ${isPlaying ? 'playing' : ''}`}
-          onClick={togglePlay}
-          title={isPlaying ? 'Stop Music' : 'Play Music'}
-        >
-          {isPlaying ? '🔇' : '🎵'}
-        </button>
-        {isPlaying && (
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={volume}
-            onChange={handleVolumeChange}
-            className="volume-slider"
-            title={`Volume: ${Math.round(volume * 100)}%`}
-          />
+                <div className="command-list">
+                  <h3>AVAILABLE COMMANDS:</h3>
+                  {commands.map((cmd, cmdIndex) => (
+                    <div key={cmd.name} className="command-row">
+                      <span className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}>
+                        {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
+                        {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
+                      </span>
+                      {cmd.isAvailable && !gameOver && playerPower.current >= cmd.powerCost && (
+                        <div className="target-buttons">
+                          {securityLayers.map((layer, layerIndex) => (
+                            !layer.broken && (
+                              <button
+                                key={layer.name}
+                                onClick={() => executeCommand(cmdIndex, layerIndex)}
+                                className="target-btn"
+                                title={`Attack ${layer.name}`}
+                              >
+                                ▶
+                              </button>
+                            )
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="terminal-logs">
+                  {logs.map((log, i) => (
+                    <p key={i} className="log-entry">{log}</p>
+                  ))}
+                </div>
+
+                {gameOver && (
+                  <div className={`game-over ${success ? 'success' : 'failure'}`}>
+                    {success ? 'HACK SUCCESSFUL' : 'HACK FAILED'}
+                    <button 
+                      onClick={() => window.location.reload()} 
+                      className="retry-btn"
+                    >
+                      RETRY
+                    </button>
+                  </div>
+                )}
+
+                {tutorialComplete && (
+                  <button 
+                    className="tutorial-restart-btn"
+                    onClick={() => {
+                      setShowTutorial(true);
+                      setTutorialStep(0);
+                    }}
+                  >
+                    SHOW TUTORIAL
+                  </button>
+                )}
+
+                {gameMode?.type === 'tutorial' && (
+                  <div className="tutorial-indicator">
+                    TRAINING MODE ACTIVE
+                  </div>
+                )}
+              </div>
+            </div>
+            {showQuitDialog && <QuitDialog />}
+          </>
         )}
+
+        <div className="audio-controls">
+          <button 
+            className={`play-button ${isPlaying ? 'playing' : ''}`}
+            onClick={togglePlay}
+            title={isPlaying ? 'Stop Music' : 'Play Music'}
+          >
+            {isPlaying ? '��' : '🎵'}
+          </button>
+          {isPlaying && (
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={volume}
+              onChange={handleVolumeChange}
+              className="volume-slider"
+              title={`Volume: ${Math.round(volume * 100)}%`}
+            />
+          )}
+        </div>
       </div>
-    </div>
+    </AudioProvider>
   );
 }
 

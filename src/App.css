@@ -655,15 +655,57 @@
 /* Add these new styles for the start screen */
 
 .start-screen {
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  background: var(--background-color);
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #000;
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  text-align: center;
   padding: 20px;
-  position: relative;
-  gap: 50px;
+}
+
+.start-screen h1 {
+  font-size: 3em;
+  margin-bottom: 0.5em;
+}
+
+.start-screen h2 {
+  font-size: 1.5em;
+  margin-bottom: 2em;
+  color: #00cc00;
+}
+
+.start-screen blockquote {
+  font-style: italic;
+  margin: 2em 0;
+  padding: 1em;
+  border-left: 4px solid #00ff00;
+}
+
+.start-screen .quote-author {
+  color: #008800;
+  margin-top: -1em;
+}
+
+.start-screen .music-icon {
+  font-size: 2em;
+  margin-top: 2em;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.hacking-game {
+  padding: 20px;
+  color: #00ff00;
+  background-color: #000;
 }
 
 .title-container {

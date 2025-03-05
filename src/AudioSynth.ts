@@ -166,4 +166,154 @@ export class AudioSynth {
       this.mainGainNode.gain.value = volume;
     }
   }
+
+  public playHackEffect() {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+
+    const time = this.audioContext.currentTime;
+    
+    const osc1 = this.audioContext.createOscillator();
+    const osc2 = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    const filter = this.audioContext.createBiquadFilter();
+    
+    osc1.type = 'square';
+    osc1.frequency.setValueAtTime(1200, time);
+    osc1.frequency.exponentialRampToValueAtTime(600, time + 0.05);
+    
+    osc2.type = 'sawtooth';
+    osc2.frequency.setValueAtTime(300, time);
+    osc2.frequency.exponentialRampToValueAtTime(150, time + 0.05);
+    
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(2000, time);
+    filter.Q.setValueAtTime(8, time);
+    
+    gain.gain.setValueAtTime(0.15, time);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.08);
+    
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.mainGainNode || this.audioContext.destination);
+    
+    osc1.start(time);
+    osc2.start(time);
+    osc1.stop(time + 0.08);
+    osc2.stop(time + 0.08);
+  }
+
+  public playSuccessEffect() {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+
+    const time = this.audioContext.currentTime;
+    
+    const frequencies = [600, 800, 1200];
+    frequencies.forEach((freq, i) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+      
+      osc.type = i === 0 ? 'square' : 'sawtooth';
+      osc.frequency.setValueAtTime(freq, time + i * 0.03);
+      
+      gain.gain.setValueAtTime(0.1, time + i * 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2 + i * 0.03);
+      
+      osc.connect(gain);
+      gain.connect(this.mainGainNode || this.audioContext!.destination);
+      
+      osc.start(time + i * 0.03);
+      osc.stop(time + 0.2 + i * 0.03);
+    });
+  }
+
+  public playFailEffect() {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+
+    const time = this.audioContext.currentTime;
+    
+    const osc = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    const filter = this.audioContext.createBiquadFilter();
+    
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, time);
+    osc.frequency.linearRampToValueAtTime(150, time + 0.2);
+    
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(1000, time);
+    filter.Q.setValueAtTime(10, time);
+    
+    gain.gain.setValueAtTime(0.2, time);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
+    
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.mainGainNode || this.audioContext.destination);
+    
+    osc.start(time);
+    osc.stop(time + 0.2);
+  }
+
+  public playStartupSequence() {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+
+    const time = this.audioContext.currentTime;
+    
+    // Startup sound sequence
+    const frequencies = [
+      220,  // A3 - low startup tone
+      440,  // A4 - system ready
+      880,  // A5 - high confirmation
+      587.33, // D5 - resolve
+    ];
+
+    // Create a lowpass filter for the cyberpunk feel
+    const filter = this.audioContext.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2000, time);
+    filter.Q.setValueAtTime(5, time);
+
+    frequencies.forEach((freq, i) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+      
+      // Alternate between sawtooth and square for that retro computer feel
+      osc.type = i % 2 === 0 ? 'sawtooth' : 'square';
+      osc.frequency.setValueAtTime(freq, time + i * 0.15);
+      
+      // Create a sweeping effect
+      gain.gain.setValueAtTime(0, time + i * 0.15);
+      gain.gain.linearRampToValueAtTime(0.2, time + i * 0.15 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + i * 0.15 + 0.3);
+      
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.mainGainNode || this.audioContext!.destination);
+      
+      osc.start(time + i * 0.15);
+      osc.stop(time + i * 0.15 + 0.3);
+    });
+
+    // Add a low atmospheric sweep
+    const sweepOsc = this.audioContext.createOscillator();
+    const sweepGain = this.audioContext.createGain();
+    
+    sweepOsc.type = 'sine';
+    sweepOsc.frequency.setValueAtTime(80, time + 0.6);
+    sweepOsc.frequency.exponentialRampToValueAtTime(160, time + 1.2);
+    
+    sweepGain.gain.setValueAtTime(0.15, time + 0.6);
+    sweepGain.gain.exponentialRampToValueAtTime(0.01, time + 1.2);
+    
+    sweepOsc.connect(sweepGain);
+    sweepGain.connect(this.mainGainNode || this.audioContext.destination);
+    
+    sweepOsc.start(time + 0.6);
+    sweepOsc.stop(time + 1.2);
+  }
 } 
