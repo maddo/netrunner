@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
+import { AudioSynth } from './AudioSynth';
 
 interface SecurityLayer {
   name: string;
@@ -27,6 +28,85 @@ interface GameMode {
   type: 'tutorial' | 'main';
   layers: number;
 }
+
+// Modify your AudioPlayer component to use the synthesizer
+const AudioPlayer = ({ isPlaying, volume }: { isPlaying: boolean, volume: number }) => {
+  const synthRef = useRef<AudioSynth | null>(null);
+
+  useEffect(() => {
+    synthRef.current = new AudioSynth();
+    
+    return () => {
+      if (synthRef.current) {
+        synthRef.current.stop();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!synthRef.current) return;
+
+    if (isPlaying) {
+      synthRef.current.start();
+    } else {
+      synthRef.current.stop();
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (synthRef.current) {
+      synthRef.current.setVolume(volume);
+    }
+  }, [volume]);
+
+  return null; // No need for audio element anymore
+};
+
+// Separate AudioControls component
+const AudioControls: React.FC<{
+  isPlaying: boolean;
+  setIsPlaying: (playing: boolean) => void;
+  volume: number;
+  setVolume: (volume: number) => void;
+}> = ({ isPlaying, setIsPlaying, volume, setVolume }) => {
+  const [showVolume, setShowVolume] = useState(false);
+
+  return (
+    <div className="audio-control-container">
+      <div className="audio-controls-wrapper">
+        <button 
+          className={`audio-toggle ${isPlaying ? 'playing' : ''}`}
+          onClick={() => setIsPlaying(!isPlaying)}
+          onMouseEnter={() => setShowVolume(true)}
+        >
+          <div className="button-content">
+            <span className="audio-icon">{isPlaying ? '⬛' : '▶'}</span>
+            <span className="audio-label">SYNC_{isPlaying ? 'ACTIVE' : 'READY'}</span>
+          </div>
+        </button>
+
+        <div 
+          className={`volume-controls ${showVolume ? 'show' : ''}`}
+          onMouseLeave={() => setShowVolume(false)}
+        >
+          <div className="volume-label">SIGNAL_STRENGTH</div>
+          <input 
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={volume}
+            onChange={(e) => setVolume(parseFloat(e.target.value))}
+            className="volume-slider"
+          />
+          <div className="volume-level">
+            {Math.round(volume * 100).toString().padStart(3, '0')}%
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 function App() {
   const [gameState, setGameState] = useState<'start' | 'tutorial' | 'playing'>('start');
@@ -66,6 +146,51 @@ function App() {
   const [showQuitDialog, setShowQuitDialog] = useState(false);
 
   const [gameMode, setGameMode] = useState<GameMode | null>(null);
+
+  // Add audio state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.3);
+  const synthRef = useRef<AudioSynth | null>(null);
+
+  // Save audio preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem('audioPreferences', JSON.stringify({ isPlaying, volume }));
+  }, [isPlaying, volume]);
+
+  // Load audio preferences from localStorage
+  useEffect(() => {
+    const savedPreferences = localStorage.getItem('audioPreferences');
+    if (savedPreferences) {
+      const { isPlaying: savedIsPlaying, volume: savedVolume } = JSON.parse(savedPreferences);
+      setIsPlaying(savedIsPlaying);
+      setVolume(savedVolume);
+    }
+  }, []);
+
+  useEffect(() => {
+    synthRef.current = new AudioSynth();
+    return () => {
+      if (synthRef.current) {
+        synthRef.current.stop();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (synthRef.current) {
+      if (isPlaying) {
+        synthRef.current.start();
+      } else {
+        synthRef.current.stop();
+      }
+    }
+  }, [isPlaying]);
+
+  useEffect(() => {
+    if (synthRef.current) {
+      synthRef.current.setVolume(volume);
+    }
+  }, [volume]);
 
   const tutorialSteps: TutorialStep[] = [
     {
@@ -386,8 +511,28 @@ function App() {
     </div>
   );
 
+  const togglePlay = () => {
+    if (!synthRef.current) return;
+    
+    if (isPlaying) {
+      synthRef.current.stop();
+    } else {
+      synthRef.current.start();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    if (synthRef.current) {
+      synthRef.current.setVolume(newVolume);
+    }
+  };
+
   return (
     <div className="App">
+      <AudioPlayer isPlaying={isPlaying} volume={volume} />
       <div className="crt-overlay"></div>
       <div className="scan-lines"></div>
       
@@ -511,6 +656,26 @@ function App() {
           {showQuitDialog && <QuitDialog />}
         </>
       )}
+
+      <div className="audio-controls">
+        <button 
+          className={`play-button ${isPlaying ? 'playing' : ''}`}
+          onClick={togglePlay}
+        >
+          {isPlaying ? '⬛ STOP' : '▶ PLAY'}
+        </button>
+        {isPlaying && (
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={volume}
+            onChange={handleVolumeChange}
+            className="volume-slider"
+          />
+        )}
+      </div>
     </div>
   );
 }

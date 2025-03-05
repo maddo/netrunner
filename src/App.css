@@ -996,4 +996,43 @@
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
-} 
+}
+
+/* Update these audio control styles */
+
+.audio-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 9999;
+}
+
+.play-button {
+  background: #000;
+  color: #00ff00;
+  border: 2px solid #00ff00;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.play-button.playing {
+  color: #ff0077;
+  border-color: #ff0077;
+}
+
+.play-button:hover {
+  box-shadow: 0 0 10px currentColor;
+}
+
+.volume-slider {
+  width: 100px;
+  height: 4px;
+}
+
+/* Remove any other audio control related styles that might be duplicated */ 
