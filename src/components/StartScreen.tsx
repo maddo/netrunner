@@ -13,7 +13,6 @@ export const StartScreen: React.FC = () => {
     <div className="start-screen">
       <h1>NETRUNNER</h1>
       <h2>SECURITY BREACH v2.0.2.0</h2>
-      <p>START TRAINING SEQUENCE</p>
       <p>DIRECT SYSTEM ACCESS</p>
       <blockquote>
         "Breaking through ICE isn't about brute force...<br />

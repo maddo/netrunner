@@ -421,125 +421,24 @@ function App() {
     setGameMode(mode);
   };
 
-  // Add start screen component
-  const StartScreen = () => (
-    <div className="start-screen">
-      <div className="title-container">
-        <div className="glitch-container">
-          <h1 className="game-title glitch" data-text="NETRUNNER">NETRUNNER</h1>
-        </div>
-        <div className="subtitle">SECURITY BREACH v2.0.2.0</div>
-      </div>
-      
-      <div className="menu-container">
-        <button 
-          className="start-button tutorial"
-          onClick={() => initializeGame({ type: 'tutorial', layers: 1 })}
-        >
-          <span className="button-text">START TRAINING SEQUENCE</span>
-          <span className="button-glitch"></span>
-        </button>
-        
-        <button 
-          className="start-button main"
-          onClick={() => initializeGame({ type: 'main', layers: 4 })}
-        >
-          <span className="button-text">DIRECT SYSTEM ACCESS</span>
-          <span className="button-glitch"></span>
-        </button>
-      </div>
-
-      <div className="flavor-text">
-        <p>"Breaking through ICE isn't about brute force...</p>
-        <p>it's about finding the right frequency of chaos."</p>
-        <p className="author">- Anonymous Netrunner, 2020</p>
-      </div>
-    </div>
-  );
-
-  // Add quit handlers
-  const handleQuitClick = () => {
-    setShowQuitDialog(true);
-  };
-
-  const handleQuitConfirm = () => {
-    setGameState('start');
-    setShowQuitDialog(false);
-    setGameMode(null);
-    // Reset game state
-    setSecurityLayers([
-      { name: "Firewall", difficulty: 3, broken: false },
-      { name: "Encryption", difficulty: 4, broken: false },
-      { name: "Neural ICE", difficulty: 5, broken: false },
-      { name: "Black ICE", difficulty: 7, broken: false },
-    ]);
-    setPlayerPower({ current: 10, max: 10, regenRate: 1 });
-    setTraceLevel(0);
-    setLogs(["> INITIATING HACK SEQUENCE...", "> CONNECTING TO MAINFRAME..."]);
-    setGameOver(false);
-    setSuccess(false);
-  };
-
-  const handleQuitCancel = () => {
-    setShowQuitDialog(false);
-  };
-
-  // Add QuitDialog component
-  const QuitDialog = () => (
-    <div className="quit-dialog-overlay">
-      <div className="quit-dialog">
-        <div className="quit-dialog-header">
-          WARNING: DISCONNECT IMMINENT
-        </div>
-        <div className="quit-dialog-content">
-          All progress will be lost. Confirm disconnect?
-        </div>
-        <div className="quit-dialog-buttons">
-          <button 
-            className="quit-btn confirm"
-            onClick={handleQuitConfirm}
-          >
-            CONFIRM
-          </button>
-          <button 
-            className="quit-btn cancel"
-            onClick={handleQuitCancel}
-          >
-            CANCEL
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const togglePlay = () => {
-    if (!synthRef.current) return;
-    
-    if (isPlaying) {
-      synthRef.current.stop();
-    } else {
-      synthRef.current.start();
-    }
-    setIsPlaying(!isPlaying);
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseFloat(e.target.value);
-    setVolume(newVolume);
-    if (synthRef.current) {
-      synthRef.current.setVolume(newVolume);
-    }
-  };
-
   return (
     <AudioProvider>
       <div className="App">
-        <AudioPlayer isPlaying={isPlaying} volume={volume} />
-        <div className="crt-overlay"></div>
-        <div className="scan-lines"></div>
-        
         {gameState === 'start' ? (
-          <StartScreen />
+          <div className="start-screen">
+            <h1>NETRUNNER</h1>
+            <h2>SECURITY BREACH v2.0.2.0</h2>
+            <p>DIRECT SYSTEM ACCESS</p>
+            <blockquote>
+              "Breaking through ICE isn't about brute force...<br />
+              it's about finding the right frequency of chaos."
+            </blockquote>
+            <p className="quote-author">- Anonymous Netrunner, 2020</p>
+            <div className="music-icon">🎵</div>
+            <button className="start-button" onClick={() => setGameState('playing')}>
+              START
+            </button>
+          </div>
         ) : (
           <>
             <div className="terminal-window">
@@ -569,7 +468,7 @@ function App() {
                 </div>
                 <button 
                   className="quit-to-menu-btn"
-                  onClick={handleQuitClick}
+                  onClick={() => setGameState('start')}
                   title="Quit to Main Menu"
                 >
                   DISCONNECT
@@ -655,17 +554,16 @@ function App() {
                 )}
               </div>
             </div>
-            {showQuitDialog && <QuitDialog />}
           </>
         )}
 
         <div className="audio-controls">
           <button 
             className={`play-button ${isPlaying ? 'playing' : ''}`}
-            onClick={togglePlay}
+            onClick={() => setIsPlaying(!isPlaying)}
             title={isPlaying ? 'Stop Music' : 'Play Music'}
           >
-            {isPlaying ? '��' : '🎵'}
+            {isPlaying ? '⬛' : '▶'}
           </button>
           {isPlaying && (
             <input
@@ -674,7 +572,7 @@ function App() {
               max="1"
               step="0.05"
               value={volume}
-              onChange={handleVolumeChange}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
               className="volume-slider"
               title={`Volume: ${Math.round(volume * 100)}%`}
             />
