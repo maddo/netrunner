@@ -526,6 +526,38 @@
 
 .progress-bar.trace {
   border-color: var(--secondary-color);
+  position: relative;
+}
+
+.trace-icon {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  text-shadow: 0 0 10px currentColor;
+  animation: iconPulse 2s infinite;
+}
+
+.trace-icon.phone {
+  left: -25px;
+  color: var(--primary-color);
+}
+
+.trace-icon.police {
+  right: -25px;
+  color: var(--secondary-color);
+}
+
+@keyframes iconPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-50%) scale(0.95);
+  }
 }
 
 .progress-bar.trace .progress-fill {
@@ -1234,4 +1266,20 @@
 
 .energy-drink-btn:active {
   transform: scale(0.95);
+}
+
+.command.power-boosted {
+  color: #00ff00;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  animation: powerPulse 2s infinite;
+}
+
+@keyframes powerPulse {
+  0%,
+  100% {
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  }
+  50% {
+    text-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
+  }
 }

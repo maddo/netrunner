@@ -142,6 +142,7 @@ function AppContent() {
   });
 
   const [energyDrinkUsed, setEnergyDrinkUsed] = useState(false);
+  const [powerBoost, setPowerBoost] = useState(0);
 
   const [commands, setCommands] = useState<HackingCommand[]>([
     {
@@ -332,6 +333,23 @@ function AppContent() {
     return () => clearInterval(timer);
   }, [gameOver]);
 
+  const handleEnergyDrink = () => {
+    if (!energyDrinkUsed) {
+      setPowerBoost(2);
+      setEnergyDrinkUsed(true);
+      setLogs((prev) => [
+        ...prev,
+        "> ENERGY DRINK CONSUMED: +2 HACK POWER FOR 30 SECONDS",
+      ]);
+
+      // Reset power boost after 30 seconds
+      setTimeout(() => {
+        setPowerBoost(0);
+        setLogs((prev) => [...prev, "> ENERGY DRINK EFFECT WORE OFF"]);
+      }, 30000);
+    }
+  };
+
   const executeCommand = (commandIndex: number, layerIndex: number) => {
     if (gameOver) return;
 
@@ -357,7 +375,8 @@ function AppContent() {
 
     // Simulate hack attempt duration
     setTimeout(() => {
-      const success = command.power >= layer.difficulty;
+      const totalPower = command.power + powerBoost; // Add power boost to command power
+      const success = totalPower >= layer.difficulty;
 
       // Set success/failure animation
       setSecurityLayers((prev) =>
@@ -381,11 +400,13 @@ function AppContent() {
 
       const newLogs = [
         `> EXECUTING ${command.name}...`,
+        powerBoost > 0 ? `> POWER BOOST ACTIVE: +${powerBoost} POWER` : "",
+        `> TOTAL POWER: ${totalPower} vs DIFFICULTY: ${layer.difficulty}`,
         `> POWER CONSUMED: ${command.powerCost}`,
         success
           ? `> ${layer.name} BREACHED!`
           : `> BREACH FAILED - INSUFFICIENT POWER`,
-      ];
+      ].filter((log) => log !== "");
 
       setPlayerPower((prev) => ({
         ...prev,
@@ -524,17 +545,6 @@ function AppContent() {
     };
   }, [audioContext]);
 
-  const handleEnergyDrink = () => {
-    if (!energyDrinkUsed) {
-      setPlayerPower((prev) => ({
-        ...prev,
-        current: Math.min(prev.current + 4, prev.max),
-      }));
-      setEnergyDrinkUsed(true);
-      setLogs((prev) => [...prev, "> ENERGY DRINK CONSUMED: +4 POWER"]);
-    }
-  };
-
   return (
     <div className="App">
       {gameState === "start" ? (
@@ -572,6 +582,8 @@ function AppContent() {
                         className="progress-fill"
                         style={{ width: `${traceLevel}%` }}
                       ></div>
+                      <span className="trace-icon phone">📱</span>
+                      <span className="trace-icon police">👮</span>
                     </div>
                   </div>
                   <div className="status-bar">
@@ -625,10 +637,12 @@ function AppContent() {
                         !cmd.isAvailable || playerPower.current < cmd.powerCost
                           ? "cooldown"
                           : ""
-                      }`}
+                      } ${powerBoost > 0 ? "power-boosted" : ""}`}
                       onClick={() => handleCommand(cmd.name)}
                     >
-                      {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
+                      {cmd.name} [PWR: {cmd.power}
+                      {powerBoost > 0 ? ` + ${powerBoost}` : ""} ] [COST:{" "}
+                      {cmd.powerCost}]
                       {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
                     </span>
                     {cmd.isAvailable &&
