@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { AudioContext } from '../AudioContext';
 
 interface Command {
@@ -19,6 +19,19 @@ interface HackingGameProps {
 
 const HackingGame: React.FC<HackingGameProps> = () => {
   const audioSynth = useContext(AudioContext);
+  
+  // Add state for current command and target
+  const [currentCommand] = useState<Command>({
+    name: "Basic Hack",
+    power: 1,
+    cost: 1
+  });
+  
+  const [currentTarget] = useState<SecurityLayer>({
+    name: "Firewall",
+    difficulty: 1,
+    breached: false
+  });
 
   const handleAttack = async (command: Command, target: SecurityLayer) => {
     console.log('Attack initiated:', command.name, 'on', target.name);
@@ -48,6 +61,12 @@ const HackingGame: React.FC<HackingGameProps> = () => {
     <div className="hacking-game">
       {/* Your existing game content goes here */}
       <div>Hacking Game Content</div>
+      <button 
+        className="target-btn"
+        onClick={() => handleAttack(currentCommand, currentTarget)}
+      >
+        Attack
+      </button>
     </div>
   );
 };
