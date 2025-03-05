@@ -536,7 +536,7 @@
 }
 
 .tutorial-content {
-  background: var(--terminal-bg);
+  background: rgba(0, 0, 0, 0.9);
   border: 2px solid var(--primary-color);
   padding: 20px;
   max-width: 400px;
@@ -823,4 +823,177 @@
     font-size: 1em;
     padding: 12px 24px;
   }
+}
+
+/* Add these new styles for the quit functionality */
+
+.quit-to-menu-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: 1px solid var(--secondary-color);
+  color: var(--secondary-color);
+  padding: 5px 10px;
+  font-family: 'Share Tech Mono', monospace;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.8em;
+  z-index: 100;
+}
+
+.quit-to-menu-btn:hover {
+  background: rgba(255, 0, 119, 0.1);
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(255, 0, 119, 0.3);
+}
+
+.quit-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.quit-dialog {
+  background: var(--terminal-bg);
+  border: 2px solid var(--secondary-color);
+  padding: 20px;
+  max-width: 400px;
+  width: 90%;
+  animation: glitchIn 0.3s ease;
+  box-shadow: 
+    0 0 20px rgba(255, 0, 119, 0.2),
+    inset 0 0 20px rgba(255, 0, 119, 0.1);
+}
+
+.quit-dialog-header {
+  color: var(--secondary-color);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1.2em;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 0, 119, 0.3);
+  text-align: center;
+}
+
+.quit-dialog-content {
+  color: var(--primary-color);
+  font-family: 'Share Tech Mono', monospace;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.quit-dialog-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.quit-btn {
+  background: transparent;
+  border: 1px solid;
+  padding: 8px 16px;
+  font-family: 'Share Tech Mono', monospace;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.quit-btn.confirm {
+  border-color: var(--secondary-color);
+  color: var(--secondary-color);
+}
+
+.quit-btn.cancel {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.quit-btn:hover {
+  transform: scale(1.05);
+}
+
+.quit-btn.confirm:hover {
+  background: rgba(255, 0, 119, 0.1);
+  box-shadow: 0 0 10px rgba(255, 0, 119, 0.3);
+}
+
+.quit-btn.cancel:hover {
+  background: rgba(0, 255, 0, 0.1);
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes glitchIn {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Add responsive design */
+@media (max-width: 768px) {
+  .quit-dialog {
+    width: 95%;
+    padding: 15px;
+  }
+  
+  .quit-dialog-header {
+    font-size: 1em;
+  }
+  
+  .quit-btn {
+    padding: 6px 12px;
+    font-size: 0.9em;
+  }
+}
+
+/* Add these new styles */
+
+.tutorial-indicator {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 255, 0, 0.1);
+  border: 1px solid var(--primary-color);
+  padding: 5px 10px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.8em;
+  color: var(--primary-color);
+  animation: pulse 2s infinite;
+}
+
+.start-button.tutorial {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.start-button.main {
+  border-color: var(--secondary-color);
+  color: var(--secondary-color);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 } 

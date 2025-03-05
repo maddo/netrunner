@@ -23,6 +23,11 @@ interface TutorialStep {
   checkCondition?: () => boolean;
 }
 
+interface GameMode {
+  type: 'tutorial' | 'main';
+  layers: number;
+}
+
 function App() {
   const [gameState, setGameState] = useState<'start' | 'tutorial' | 'playing'>('start');
   const [securityLayers, setSecurityLayers] = useState<SecurityLayer[]>([
@@ -58,46 +63,30 @@ function App() {
   const [tutorialStep, setTutorialStep] = useState(0);
   const [tutorialComplete, setTutorialComplete] = useState(false);
 
+  const [showQuitDialog, setShowQuitDialog] = useState(false);
+
+  const [gameMode, setGameMode] = useState<GameMode | null>(null);
+
   const tutorialSteps: TutorialStep[] = [
     {
-      message: "Welcome, Netrunner. This tutorial will teach you how to hack the system.",
+      message: "Welcome, Netrunner. Let's start with a basic hack.",
       highlight: null,
       requireClick: true
     },
     {
-      message: "These are the security layers you need to breach. Each layer has a difficulty level.",
+      message: "This is a security layer. Each layer has a difficulty level that you need to overcome.",
       highlight: ".security-layers",
       requireClick: true
     },
     {
-      message: "Your hacking commands are listed here. Each command has a POWER level and POWER COST.",
+      message: "Use your hacking commands to break through. Match the command's POWER with the layer's DIFFICULTY.",
       highlight: ".command-list",
       requireClick: true
     },
     {
-      message: "Watch your POWER meter! Commands consume power, but it regenerates over time.",
-      highlight: ".power",
-      requireClick: true
-    },
-    {
-      message: "The TRACE meter shows how close the system is to detecting you. Don't let it reach 100%!",
-      highlight: ".trace",
-      requireClick: true
-    },
-    {
-      message: "Try using BYPASS.exe on the Firewall layer. Click the arrow button to execute.",
+      message: "Try using BYPASS.exe on the Training Firewall. Click the arrow button to execute.",
       highlight: ".command-row:first-child",
       checkCondition: () => securityLayers[0].broken
-    },
-    {
-      message: "Great! Notice that the command is now on cooldown and power was consumed.",
-      highlight: ".command-row:first-child",
-      requireClick: true
-    },
-    {
-      message: "Break through all security layers before the trace completes. Good luck, Netrunner!",
-      highlight: null,
-      requireClick: true
     }
   ];
 
@@ -119,9 +108,21 @@ function App() {
     if (securityLayers.every(layer => layer.broken)) {
       setSuccess(true);
       setGameOver(true);
-      setLogs(prev => [...prev, "> HACK SUCCESSFUL - DATA ACQUIRED"]);
+      if (gameMode?.type === 'tutorial') {
+        setLogs(prev => [
+          ...prev, 
+          "> TUTORIAL COMPLETE!",
+          "> You're ready for the real thing.",
+          "> Initializing main game..."
+        ]);
+        setTimeout(() => {
+          initializeGame({ type: 'main', layers: 4 });
+        }, 3000);
+      } else {
+        setLogs(prev => [...prev, "> HACK SUCCESSFUL - DATA ACQUIRED"]);
+      }
     }
-  }, [traceLevel, securityLayers]);
+  }, [traceLevel, securityLayers, gameMode]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -272,6 +273,28 @@ function App() {
     setTutorialComplete(true);
   };
 
+  const initializeGame = (mode: GameMode) => {
+    const layers = mode.type === 'tutorial' ? [
+      { name: "Training Firewall", difficulty: 2, broken: false }
+    ] : [
+      { name: "Firewall", difficulty: 3, broken: false },
+      { name: "Encryption", difficulty: 4, broken: false },
+      { name: "Neural ICE", difficulty: 5, broken: false },
+      { name: "Black ICE", difficulty: 7, broken: false },
+    ];
+
+    setSecurityLayers(layers);
+    setGameState('playing');
+    setShowTutorial(mode.type === 'tutorial');
+    setTutorialStep(0);
+    setPlayerPower({ current: 10, max: 10, regenRate: 1 });
+    setTraceLevel(0);
+    setLogs(["> INITIATING HACK SEQUENCE...", "> CONNECTING TO MAINFRAME..."]);
+    setGameOver(false);
+    setSuccess(false);
+    setGameMode(mode);
+  };
+
   // Add start screen component
   const StartScreen = () => (
     <div className="start-screen">
@@ -284,16 +307,16 @@ function App() {
       
       <div className="menu-container">
         <button 
-          className="start-button"
-          onClick={startTutorial}
+          className="start-button tutorial"
+          onClick={() => initializeGame({ type: 'tutorial', layers: 1 })}
         >
-          <span className="button-text">START WITH TUTORIAL</span>
+          <span className="button-text">START TRAINING SEQUENCE</span>
           <span className="button-glitch"></span>
         </button>
         
         <button 
-          className="start-button"
-          onClick={startGame}
+          className="start-button main"
+          onClick={() => initializeGame({ type: 'main', layers: 4 })}
         >
           <span className="button-text">DIRECT SYSTEM ACCESS</span>
           <span className="button-glitch"></span>
@@ -308,6 +331,61 @@ function App() {
     </div>
   );
 
+  // Add quit handlers
+  const handleQuitClick = () => {
+    setShowQuitDialog(true);
+  };
+
+  const handleQuitConfirm = () => {
+    setGameState('start');
+    setShowQuitDialog(false);
+    setGameMode(null);
+    // Reset game state
+    setSecurityLayers([
+      { name: "Firewall", difficulty: 3, broken: false },
+      { name: "Encryption", difficulty: 4, broken: false },
+      { name: "Neural ICE", difficulty: 5, broken: false },
+      { name: "Black ICE", difficulty: 7, broken: false },
+    ]);
+    setPlayerPower({ current: 10, max: 10, regenRate: 1 });
+    setTraceLevel(0);
+    setLogs(["> INITIATING HACK SEQUENCE...", "> CONNECTING TO MAINFRAME..."]);
+    setGameOver(false);
+    setSuccess(false);
+  };
+
+  const handleQuitCancel = () => {
+    setShowQuitDialog(false);
+  };
+
+  // Add QuitDialog component
+  const QuitDialog = () => (
+    <div className="quit-dialog-overlay">
+      <div className="quit-dialog">
+        <div className="quit-dialog-header">
+          WARNING: DISCONNECT IMMINENT
+        </div>
+        <div className="quit-dialog-content">
+          All progress will be lost. Confirm disconnect?
+        </div>
+        <div className="quit-dialog-buttons">
+          <button 
+            className="quit-btn confirm"
+            onClick={handleQuitConfirm}
+          >
+            CONFIRM
+          </button>
+          <button 
+            className="quit-btn cancel"
+            onClick={handleQuitCancel}
+          >
+            CANCEL
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="App">
       <div className="crt-overlay"></div>
@@ -316,106 +394,122 @@ function App() {
       {gameState === 'start' ? (
         <StartScreen />
       ) : (
-        <div className="terminal-window">
-          <div className="terminal-header">
-            <span className="blink">[ARASAKA SECURITY BREACH IN PROGRESS]</span>
-            <div className="system-info">
-              <div className="status-bars">
-                <div className="status-bar">
-                  <span>TRACE: {traceLevel}%</span>
-                  <div className="progress-bar trace">
-                    <div 
-                      className="progress-fill" 
-                      style={{ width: `${traceLevel}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="status-bar">
-                  <span>POWER: {playerPower.current}/{playerPower.max}</span>
-                  <div className="progress-bar power">
-                    <div 
-                      className="progress-fill" 
-                      style={{ width: `${(playerPower.current / playerPower.max) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="terminal-content">
-            <div className="security-layers">
-              <h3>SECURITY LAYERS:</h3>
-              {securityLayers.map((layer, i) => (
-                <div 
-                  key={layer.name} 
-                  className={`layer ${layer.broken ? 'broken' : ''} ${layer.animating ? layer.animating : ''}`}
-                >
-                  {layer.name} [DIFFICULTY: {layer.difficulty}]
-                  {layer.broken && ' [BREACHED]'}
-                </div>
-              ))}
-            </div>
-
-            <div className="command-list">
-              <h3>AVAILABLE COMMANDS:</h3>
-              {commands.map((cmd, cmdIndex) => (
-                <div key={cmd.name} className="command-row">
-                  <span className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}>
-                    {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
-                    {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
-                  </span>
-                  {cmd.isAvailable && !gameOver && playerPower.current >= cmd.powerCost && (
-                    <div className="target-buttons">
-                      {securityLayers.map((layer, layerIndex) => (
-                        !layer.broken && (
-                          <button
-                            key={layer.name}
-                            onClick={() => executeCommand(cmdIndex, layerIndex)}
-                            className="target-btn"
-                            title={`Attack ${layer.name}`}
-                          >
-                            ▶
-                          </button>
-                        )
-                      ))}
+        <>
+          <div className="terminal-window">
+            <div className="terminal-header">
+              <span className="blink">[ARASAKA SECURITY BREACH IN PROGRESS]</span>
+              <div className="system-info">
+                <div className="status-bars">
+                  <div className="status-bar">
+                    <span>TRACE: {traceLevel}%</span>
+                    <div className="progress-bar trace">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${traceLevel}%` }}
+                      ></div>
                     </div>
-                  )}
+                  </div>
+                  <div className="status-bar">
+                    <span>POWER: {playerPower.current}/{playerPower.max}</span>
+                    <div className="progress-bar power">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${(playerPower.current / playerPower.max) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
-
-            <div className="terminal-logs">
-              {logs.map((log, i) => (
-                <p key={i} className="log-entry">{log}</p>
-              ))}
-            </div>
-
-            {gameOver && (
-              <div className={`game-over ${success ? 'success' : 'failure'}`}>
-                {success ? 'HACK SUCCESSFUL' : 'HACK FAILED'}
-                <button 
-                  onClick={() => window.location.reload()} 
-                  className="retry-btn"
-                >
-                  RETRY
-                </button>
               </div>
-            )}
-
-            {tutorialComplete && (
               <button 
-                className="tutorial-restart-btn"
-                onClick={() => {
-                  setShowTutorial(true);
-                  setTutorialStep(0);
-                }}
+                className="quit-to-menu-btn"
+                onClick={handleQuitClick}
+                title="Quit to Main Menu"
               >
-                SHOW TUTORIAL
+                DISCONNECT
               </button>
-            )}
+            </div>
+
+            <div className="terminal-content">
+              <div className="security-layers">
+                <h3>SECURITY LAYERS:</h3>
+                {securityLayers.map((layer, i) => (
+                  <div 
+                    key={layer.name} 
+                    className={`layer ${layer.broken ? 'broken' : ''} ${layer.animating ? layer.animating : ''}`}
+                  >
+                    {layer.name} [DIFFICULTY: {layer.difficulty}]
+                    {layer.broken && ' [BREACHED]'}
+                  </div>
+                ))}
+              </div>
+
+              <div className="command-list">
+                <h3>AVAILABLE COMMANDS:</h3>
+                {commands.map((cmd, cmdIndex) => (
+                  <div key={cmd.name} className="command-row">
+                    <span className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}>
+                      {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
+                      {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
+                    </span>
+                    {cmd.isAvailable && !gameOver && playerPower.current >= cmd.powerCost && (
+                      <div className="target-buttons">
+                        {securityLayers.map((layer, layerIndex) => (
+                          !layer.broken && (
+                            <button
+                              key={layer.name}
+                              onClick={() => executeCommand(cmdIndex, layerIndex)}
+                              className="target-btn"
+                              title={`Attack ${layer.name}`}
+                            >
+                              ▶
+                            </button>
+                          )
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="terminal-logs">
+                {logs.map((log, i) => (
+                  <p key={i} className="log-entry">{log}</p>
+                ))}
+              </div>
+
+              {gameOver && (
+                <div className={`game-over ${success ? 'success' : 'failure'}`}>
+                  {success ? 'HACK SUCCESSFUL' : 'HACK FAILED'}
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="retry-btn"
+                  >
+                    RETRY
+                  </button>
+                </div>
+              )}
+
+              {tutorialComplete && (
+                <button 
+                  className="tutorial-restart-btn"
+                  onClick={() => {
+                    setShowTutorial(true);
+                    setTutorialStep(0);
+                  }}
+                >
+                  SHOW TUTORIAL
+                </button>
+              )}
+
+              {gameMode?.type === 'tutorial' && (
+                <div className="tutorial-indicator">
+                  TRAINING MODE ACTIVE
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+          {showQuitDialog && <QuitDialog />}
+        </>
       )}
     </div>
   );
