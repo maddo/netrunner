@@ -1,0 +1,14 @@
+.command {
+  cursor: pointer;
+  user-select: none;
+}
+
+.command:hover {
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00;
+}
+
+.command:active {
+  color: #ff0000;
+  text-shadow: 0 0 5px #ff0000;
+} 

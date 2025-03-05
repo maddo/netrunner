@@ -3,19 +3,106 @@ export class AudioSynth {
   private mainGainNode: GainNode | null = null;
   private isPlaying: boolean = false;
   private interval: number | null = null;
-  private currentBeat: number = 0;
-  private bpm: number = 70; // Slow tempo
 
   constructor() {
-    this.init();
+    console.log('AudioSynth constructed');
   }
 
-  private init() {
+  private async init() {
     if (!this.audioContext) {
-      this.audioContext = new AudioContext();
+      console.log('Initializing audio context...');
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       this.mainGainNode = this.audioContext.createGain();
       this.mainGainNode.connect(this.audioContext.destination);
       this.mainGainNode.gain.value = 0.3;
+      
+      // Ensure audio context is running
+      if (this.audioContext.state !== 'running') {
+        console.log('Resuming audio context...');
+        await this.audioContext.resume();
+      }
+      console.log('Audio context state:', this.audioContext.state);
+    }
+  }
+
+  public async start() {
+    console.log('Start called');
+    if (this.isPlaying) {
+      console.log('Already playing, returning');
+      return;
+    }
+    
+    await this.init();
+    if (!this.audioContext) {
+      console.error('Failed to initialize audio context');
+      return;
+    }
+
+    console.log('Starting playback...');
+    this.isPlaying = true;
+    
+    // Clear any existing interval
+    if (this.interval) {
+      clearInterval(this.interval);
+    }
+
+    // Start playing immediately
+    this.playDarkArpeggio(this.audioContext.currentTime);
+    
+    // Schedule next beats
+    const beatInterval = 4000; // 4 seconds per progression
+    this.interval = window.setInterval(() => {
+      if (this.isPlaying && this.audioContext) {
+        this.playDarkArpeggio(this.audioContext.currentTime);
+      }
+    }, beatInterval);
+  }
+
+  private playDarkArpeggio(time: number) {
+    if (!this.audioContext || !this.mainGainNode) {
+      console.error('Cannot play: audio context or gain node not initialized');
+      return;
+    }
+
+    console.log('Playing arpeggio at time:', time);
+    const frequencies = [
+      110.00,  // A2 (bass)
+      220.00,  // A3
+      261.63,  // C4
+      329.63,  // E4
+    ];
+
+    frequencies.forEach((freq, i) => {
+      const osc = this.audioContext!.createOscillator();
+      const gainNode = this.audioContext!.createGain();
+      
+      osc.type = i === 0 ? 'sawtooth' : 'triangle';
+      osc.frequency.value = freq;
+
+      gainNode.gain.setValueAtTime(0, time + i * 0.2);
+      gainNode.gain.linearRampToValueAtTime(0.2, time + i * 0.2 + 0.1);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, time + i * 0.2 + 0.8);
+
+      osc.connect(gainNode);
+      gainNode.connect(this.mainGainNode!);
+
+      osc.start(time + i * 0.2);
+      osc.stop(time + i * 0.2 + 1);
+    });
+  }
+
+  public stop() {
+    console.log('Stop called');
+    this.isPlaying = false;
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+  }
+
+  public setVolume(volume: number) {
+    if (this.mainGainNode) {
+      this.mainGainNode.gain.value = volume;
     }
   }
 
@@ -64,195 +151,73 @@ export class AudioSynth {
     oscillator.stop(time + duration);
   }
 
-  private playBeat(time: number) {
-    if (!this.audioContext) return;
-    
-    const measureLength = 60 / this.bpm * 4;
-    const beatTime = time + (this.currentBeat * measureLength / 4);
-
-    // 16-measure sequence
-    const sequence = this.currentBeat % 64; // 16 measures * 4 beats
-
-    // Kick drum pattern (every 2 beats)
-    if (sequence % 8 === 0) {
-      this.createDrumSound(60, 0.3, beatTime);
+  public async playHackEffect() {
+    console.log('Playing hack effect');
+    if (!this.audioContext || !this.mainGainNode) {
+      console.log('No audio context or gain node');
+      return;
     }
 
-    // Snare (on 2 and 4)
-    if (sequence % 8 === 4) {
-      this.createDrumSound(200, 0.2, beatTime);
-    }
-
-    // Hi-hat pattern
-    if (sequence % 2 === 0) {
-      this.createDrumSound(1000, 0.1, beatTime);
-    }
-
-    // Bass line
-    const bassNotes = [
-      36, 36, 41, 43,  // Measure 1-4
-      36, 36, 41, 38,  // Measure 5-8
-      36, 36, 41, 43,  // Measure 9-12
-      36, 34, 33, 31   // Measure 13-16
-    ];
-    
-    if (sequence % 4 === 0) {
-      const bassFreq = 440 * Math.pow(2, (bassNotes[Math.floor(sequence / 4)] - 69) / 12);
-      this.createSynthNote(bassFreq, beatTime, measureLength, 'sawtooth');
-    }
-
-    // Pad chords
-    const padNotes = [
-      [48, 51, 55], // Am
-      [48, 51, 55], // Am
-      [53, 56, 60], // Dm
-      [55, 58, 62], // Em
-    ];
-    
-    if (sequence % 16 === 0) {
-      const chordIndex = (Math.floor(sequence / 16) % padNotes.length);
-      padNotes[chordIndex].forEach(note => {
-        const freq = 440 * Math.pow(2, (note - 69) / 12);
-        this.createSynthNote(freq, beatTime, measureLength * 4, 'triangle');
-      });
-    }
-
-    // Atmospheric high notes
-    if (sequence % 32 === 0) {
-      const highNote = 440 * Math.pow(2, (72 - 69) / 12);
-      this.createSynthNote(highNote, beatTime, measureLength * 8, 'sine');
-    }
-
-    this.currentBeat = (this.currentBeat + 1) % 64;
-  }
-
-  public start() {
-    if (this.isPlaying) return;
-    
-    this.init();
-    this.isPlaying = true;
-    this.currentBeat = 0;
-
-    if (this.audioContext) {
-      this.audioContext.resume();
+    try {
+      const osc = this.audioContext.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(880, this.audioContext.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(110, this.audioContext.currentTime + 0.1);
       
-      const beatInterval = (60 / this.bpm) * 1000; // Convert BPM to milliseconds
+      osc.connect(this.mainGainNode);
+      osc.start();
+      osc.stop(this.audioContext.currentTime + 0.1);
       
-      // Start the first beat immediately
-      this.playBeat(this.audioContext.currentTime);
-      
-      // Schedule subsequent beats with looping
-      this.interval = window.setInterval(() => {
-        if (this.isPlaying && this.audioContext) {
-          this.playBeat(this.audioContext.currentTime);
-          // Reset currentBeat when reaching the end of the sequence
-          this.currentBeat = (this.currentBeat + 1) % 16; // Assuming 16-measure sequence
-        }
-      }, beatInterval);
+      console.log('Hack effect started');
+    } catch (error) {
+      console.error('Error playing hack effect:', error);
     }
-  }
-
-  public stop() {
-    this.isPlaying = false;
-    if (this.interval) {
-      clearInterval(this.interval);
-      this.interval = null;
-    }
-    this.currentBeat = 0;
-  }
-
-  public setVolume(volume: number) {
-    if (this.mainGainNode) {
-      this.mainGainNode.gain.value = volume;
-    }
-  }
-
-  public playHackEffect() {
-    if (!this.audioContext) this.init();
-    if (!this.audioContext) return;
-
-    const time = this.audioContext.currentTime;
-    
-    const osc1 = this.audioContext.createOscillator();
-    const osc2 = this.audioContext.createOscillator();
-    const gain = this.audioContext.createGain();
-    const filter = this.audioContext.createBiquadFilter();
-    
-    osc1.type = 'square';
-    osc1.frequency.setValueAtTime(1200, time);
-    osc1.frequency.exponentialRampToValueAtTime(600, time + 0.05);
-    
-    osc2.type = 'sawtooth';
-    osc2.frequency.setValueAtTime(300, time);
-    osc2.frequency.exponentialRampToValueAtTime(150, time + 0.05);
-    
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(2000, time);
-    filter.Q.setValueAtTime(8, time);
-    
-    gain.gain.setValueAtTime(0.15, time);
-    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.08);
-    
-    osc1.connect(filter);
-    osc2.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.mainGainNode || this.audioContext.destination);
-    
-    osc1.start(time);
-    osc2.start(time);
-    osc1.stop(time + 0.08);
-    osc2.stop(time + 0.08);
   }
 
   public playSuccessEffect() {
     if (!this.audioContext) this.init();
-    if (!this.audioContext) return;
+    if (!this.audioContext || !this.mainGainNode) return;
 
     const time = this.audioContext.currentTime;
     
-    const frequencies = [600, 800, 1200];
+    // Success chord
+    const frequencies = [440, 554.37, 659.25]; // A4, C#5, E5
     frequencies.forEach((freq, i) => {
       const osc = this.audioContext!.createOscillator();
       const gain = this.audioContext!.createGain();
       
-      osc.type = i === 0 ? 'square' : 'sawtooth';
-      osc.frequency.setValueAtTime(freq, time + i * 0.03);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, time);
       
-      gain.gain.setValueAtTime(0.1, time + i * 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2 + i * 0.03);
+      gain.gain.setValueAtTime(0.1, time);
+      gain.gain.exponentialRampToValueAtTime(0.01, time + 0.3);
       
       osc.connect(gain);
-      gain.connect(this.mainGainNode || this.audioContext!.destination);
+      gain.connect(this.mainGainNode!);
       
-      osc.start(time + i * 0.03);
-      osc.stop(time + 0.2 + i * 0.03);
+      osc.start(time + i * 0.05);
+      osc.stop(time + 0.3);
     });
   }
 
   public playFailEffect() {
     if (!this.audioContext) this.init();
-    if (!this.audioContext) return;
+    if (!this.audioContext || !this.mainGainNode) return;
 
     const time = this.audioContext.currentTime;
     
+    // Error buzz
     const osc = this.audioContext.createOscillator();
     const gain = this.audioContext.createGain();
-    const filter = this.audioContext.createBiquadFilter();
     
     osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(200, time);
-    osc.frequency.linearRampToValueAtTime(150, time + 0.2);
+    osc.frequency.setValueAtTime(110, time);
     
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(1000, time);
-    filter.Q.setValueAtTime(10, time);
-    
-    gain.gain.setValueAtTime(0.2, time);
+    gain.gain.setValueAtTime(0.3, time);
     gain.gain.exponentialRampToValueAtTime(0.01, time + 0.2);
     
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.mainGainNode || this.audioContext.destination);
+    osc.connect(gain);
+    gain.connect(this.mainGainNode);
     
     osc.start(time);
     osc.stop(time + 0.2);

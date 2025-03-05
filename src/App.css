@@ -338,9 +338,24 @@
 }
 
 .command {
-  padding: 5px;
-  border: 1px solid var(--primary-color);
-  flex-grow: 1;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.command:hover {
+  color: #00ff00;
+  text-shadow: 0 0 5px #00ff00;
+  border: 1px solid #00ff00;
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.command:active {
+  color: #ff0000;
+  text-shadow: 0 0 5px #ff0000;
+  border: 1px solid #ff0000;
+  background: rgba(255, 0, 0, 0.1);
 }
 
 .command.cooldown {
@@ -426,11 +441,6 @@
 
 .retry-btn:hover {
   background: rgba(255, 255, 255, 0.1);
-}
-
-/* Add some hover effects */
-.command:hover {
-  background: rgba(0, 255, 0, 0.1);
 }
 
 /* Scrollbar styling */
@@ -1086,4 +1096,44 @@
   height: 4px;
 }
 
-/* Remove any other audio control related styles that might be duplicated */ 
+/* Remove any other audio control related styles that might be duplicated */
+
+.log-container {
+  max-height: 200px; /* or whatever height you prefer */
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding: 10px;
+  background-color: #000;
+  border: 1px solid #00ff00;
+  font-family: 'Courier New', monospace;
+  color: #00ff00;
+  margin-top: 10px;
+  
+  /* Hide scrollbar for Chrome/Safari/Opera */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  /* Track */
+  &::-webkit-scrollbar-track {
+    background: #000;
+  }
+  
+  /* Handle */
+  &::-webkit-scrollbar-thumb {
+    background: #00ff00;
+    border-radius: 4px;
+  }
+  
+  /* Handle on hover */
+  &::-webkit-scrollbar-thumb:hover {
+    background: #00cc00;
+  }
+}
+
+.log-message {
+  margin: 4px 0;
+  line-height: 1.2;
+  white-space: pre-wrap;
+  word-break: break-word;
+} 

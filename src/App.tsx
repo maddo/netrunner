@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import './App.css';
 import { AudioSynth } from './AudioSynth';
-import { AudioProvider } from './AudioContext';
+import { AudioProvider, AudioContext } from './AudioContext';
 
 interface SecurityLayer {
   name: string;
@@ -72,6 +72,10 @@ const AudioControls: React.FC<{
 }> = ({ isPlaying, setIsPlaying, volume, setVolume }) => {
   const [showVolume, setShowVolume] = useState(false);
 
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying);
+  };
+
   return (
     <div className="audio-control-container">
       <div className="audio-controls-wrapper">
@@ -109,7 +113,7 @@ const AudioControls: React.FC<{
   );
 };
 
-function App() {
+function AppContent() {
   const [gameState, setGameState] = useState<'start' | 'tutorial' | 'playing'>('start');
   const [securityLayers, setSecurityLayers] = useState<SecurityLayer[]>([
     { name: "Firewall", difficulty: 3, broken: false },
@@ -150,8 +154,8 @@ function App() {
 
   // Add audio state
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.3);
-  const synthRef = useRef<AudioSynth | null>(null);
+  const [volume, setVolume] = useState(0.7);
+  const audioContext = useContext(AudioContext);
 
   // Save audio preferences to localStorage
   useEffect(() => {
@@ -169,29 +173,24 @@ function App() {
   }, []);
 
   useEffect(() => {
-    synthRef.current = new AudioSynth();
-    return () => {
-      if (synthRef.current) {
-        synthRef.current.stop();
-      }
-    };
-  }, []);
+    console.log('Audio effect running, isPlaying:', isPlaying);
+    console.log('audioContext available:', !!audioContext);
 
-  useEffect(() => {
-    if (synthRef.current) {
-      if (isPlaying) {
-        synthRef.current.start();
-      } else {
-        synthRef.current.stop();
+    if (audioContext) {
+      try {
+        if (isPlaying) {
+          console.log('Attempting to start audio');
+          audioContext.start();
+          audioContext.setVolume(volume);
+        } else {
+          console.log('Attempting to stop audio');
+          audioContext.stop();
+        }
+      } catch (error) {
+        console.error('Audio operation failed:', error);
       }
     }
-  }, [isPlaying]);
-
-  useEffect(() => {
-    if (synthRef.current) {
-      synthRef.current.setVolume(volume);
-    }
-  }, [volume]);
+  }, [isPlaying, volume, audioContext]);
 
   const tutorialSteps: TutorialStep[] = [
     {
@@ -421,164 +420,240 @@ function App() {
     setGameMode(mode);
   };
 
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    console.log('Play button clicked');
+    console.log('Audio context:', audioContext);
+    setIsPlaying(!isPlaying);
+  };
+
+  return (
+    <div className="App">
+      {gameState === 'start' ? (
+        <div className="start-screen">
+          <h1>NETRUNNER</h1>
+          <h2>SECURITY BREACH v2.0.2.0</h2>
+          <p>DIRECT SYSTEM ACCESS</p>
+          <blockquote>
+            "Breaking through ICE isn't about brute force...<br />
+            it's about finding the right frequency of chaos."
+          </blockquote>
+          <p className="quote-author">- Anonymous Netrunner, 2020</p>
+          <div className="music-icon">🎵</div>
+          <button className="start-button" onClick={() => setGameState('playing')}>
+            START
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="terminal-window">
+            <div className="terminal-header">
+              <span className="blink">[ARASAKA SECURITY BREACH IN PROGRESS]</span>
+              <div className="system-info">
+                <div className="status-bars">
+                  <div className="status-bar">
+                    <span>TRACE: {traceLevel}%</span>
+                    <div className="progress-bar trace">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${traceLevel}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div className="status-bar">
+                    <span>POWER: {playerPower.current}/{playerPower.max}</span>
+                    <div className="progress-bar power">
+                      <div 
+                        className="progress-fill" 
+                        style={{ width: `${(playerPower.current / playerPower.max) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button 
+                className="quit-to-menu-btn"
+                onClick={() => setGameState('start')}
+                title="Quit to Main Menu"
+              >
+                DISCONNECT
+              </button>
+            </div>
+
+            <div className="terminal-content">
+              <div className="security-layers">
+                <h3>SECURITY LAYERS:</h3>
+                {securityLayers.map((layer, i) => (
+                  <div 
+                    key={layer.name} 
+                    className={`layer ${layer.broken ? 'broken' : ''} ${layer.animating ? layer.animating : ''}`}
+                  >
+                    {layer.name} [DIFFICULTY: {layer.difficulty}]
+                    {layer.broken && ' [BREACHED]'}
+                  </div>
+                ))}
+              </div>
+
+              <div className="command-list">
+                <h3>AVAILABLE COMMANDS:</h3>
+                {commands.map((cmd, cmdIndex) => (
+                  <div key={cmd.name} className="command-row">
+                    <span className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}>
+                      {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
+                      {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
+                    </span>
+                    {cmd.isAvailable && !gameOver && playerPower.current >= cmd.powerCost && (
+                      <div className="target-buttons">
+                        {securityLayers.map((layer, layerIndex) => (
+                          !layer.broken && (
+                            <button
+                              key={layer.name}
+                              onClick={() => executeCommand(cmdIndex, layerIndex)}
+                              className="target-btn"
+                              title={`Attack ${layer.name}`}
+                            >
+                              ▶
+                            </button>
+                          )
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="terminal-logs">
+                {logs.map((log, i) => (
+                  <p key={i} className="log-entry">{log}</p>
+                ))}
+              </div>
+
+              {gameOver && (
+                <div className={`game-over ${success ? 'success' : 'failure'}`}>
+                  {success ? 'HACK SUCCESSFUL' : 'HACK FAILED'}
+                  <button 
+                    onClick={() => window.location.reload()} 
+                    className="retry-btn"
+                  >
+                    RETRY
+                  </button>
+                </div>
+              )}
+
+              {tutorialComplete && (
+                <button 
+                  className="tutorial-restart-btn"
+                  onClick={() => {
+                    setShowTutorial(true);
+                    setTutorialStep(0);
+                  }}
+                >
+                  SHOW TUTORIAL
+                </button>
+              )}
+
+              {gameMode?.type === 'tutorial' && (
+                <div className="tutorial-indicator">
+                  TRAINING MODE ACTIVE
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      <div 
+        className="audio-controls" 
+        style={{ 
+          position: 'fixed',
+          bottom: '20px',
+          right: '20px',
+          zIndex: 9999,
+          background: 'rgba(0,0,0,0.5)',
+          padding: '10px',
+        }}
+      >
+        <button 
+          className={`play-button ${isPlaying ? 'playing' : ''}`}
+          onClick={handlePlayClick}
+          style={{ 
+            cursor: 'pointer',
+            padding: '10px 20px',
+            fontSize: '20px',
+            background: '#000',
+            color: '#00ff00',
+            border: '2px solid #00ff00',
+            margin: '0',
+            display: 'block',
+          }}
+        >
+          {isPlaying ? '⬛' : '▶'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Separate root component that only handles AudioProvider
+function App() {
+  console.log('=== App Rendering ===');
+
+  const audioContext = useContext(AudioContext);
+  console.log('AudioContext available:', !!audioContext);
+
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(0.7);
+
+  // Add direct click handler to test event bubbling
+  const handleClick = (e: React.MouseEvent) => {
+    console.log('Div clicked');
+  };
+
+  const handlePlayClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent event bubbling
+    console.log('Play button clicked');
+    console.log('Audio context:', audioContext);
+    setIsPlaying(!isPlaying);
+  };
+
+  useEffect(() => {
+    console.log('App mounted');
+    console.log('AudioSynth available:', !!audioContext);
+
+    // Add click listeners to all command elements
+    const addCommandListeners = () => {
+      const commands = document.querySelectorAll('.command');
+      console.log('Found command elements:', commands.length);
+
+      commands.forEach(cmd => {
+        cmd.addEventListener('click', (e) => {
+          console.log('Command clicked!');
+          if (audioContext) {
+            console.log('Playing hack effect');
+            audioContext.playHackEffect();
+          } else {
+            console.log('No AudioSynth available');
+          }
+        });
+      });
+    };
+
+    // Try immediately
+    addCommandListeners();
+
+    // Also try after a short delay to ensure DOM is loaded
+    setTimeout(addCommandListeners, 1000);
+
+    // Add test click handler to entire document
+    document.addEventListener('click', (e) => {
+      console.log('Document clicked at:', e.target);
+    });
+
+  }, [audioContext]);
+
   return (
     <AudioProvider>
-      <div className="App">
-        {gameState === 'start' ? (
-          <div className="start-screen">
-            <h1>NETRUNNER</h1>
-            <h2>SECURITY BREACH v2.0.2.0</h2>
-            <p>DIRECT SYSTEM ACCESS</p>
-            <blockquote>
-              "Breaking through ICE isn't about brute force...<br />
-              it's about finding the right frequency of chaos."
-            </blockquote>
-            <p className="quote-author">- Anonymous Netrunner, 2020</p>
-            <div className="music-icon">🎵</div>
-            <button className="start-button" onClick={() => setGameState('playing')}>
-              START
-            </button>
-          </div>
-        ) : (
-          <>
-            <div className="terminal-window">
-              <div className="terminal-header">
-                <span className="blink">[ARASAKA SECURITY BREACH IN PROGRESS]</span>
-                <div className="system-info">
-                  <div className="status-bars">
-                    <div className="status-bar">
-                      <span>TRACE: {traceLevel}%</span>
-                      <div className="progress-bar trace">
-                        <div 
-                          className="progress-fill" 
-                          style={{ width: `${traceLevel}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                    <div className="status-bar">
-                      <span>POWER: {playerPower.current}/{playerPower.max}</span>
-                      <div className="progress-bar power">
-                        <div 
-                          className="progress-fill" 
-                          style={{ width: `${(playerPower.current / playerPower.max) * 100}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <button 
-                  className="quit-to-menu-btn"
-                  onClick={() => setGameState('start')}
-                  title="Quit to Main Menu"
-                >
-                  DISCONNECT
-                </button>
-              </div>
-
-              <div className="terminal-content">
-                <div className="security-layers">
-                  <h3>SECURITY LAYERS:</h3>
-                  {securityLayers.map((layer, i) => (
-                    <div 
-                      key={layer.name} 
-                      className={`layer ${layer.broken ? 'broken' : ''} ${layer.animating ? layer.animating : ''}`}
-                    >
-                      {layer.name} [DIFFICULTY: {layer.difficulty}]
-                      {layer.broken && ' [BREACHED]'}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="command-list">
-                  <h3>AVAILABLE COMMANDS:</h3>
-                  {commands.map((cmd, cmdIndex) => (
-                    <div key={cmd.name} className="command-row">
-                      <span className={`command ${!cmd.isAvailable || playerPower.current < cmd.powerCost ? 'cooldown' : ''}`}>
-                        {cmd.name} [PWR: {cmd.power}] [COST: {cmd.powerCost}]
-                        {cmd.cooldown > 0 && ` [COOLDOWN: ${cmd.cooldown}s]`}
-                      </span>
-                      {cmd.isAvailable && !gameOver && playerPower.current >= cmd.powerCost && (
-                        <div className="target-buttons">
-                          {securityLayers.map((layer, layerIndex) => (
-                            !layer.broken && (
-                              <button
-                                key={layer.name}
-                                onClick={() => executeCommand(cmdIndex, layerIndex)}
-                                className="target-btn"
-                                title={`Attack ${layer.name}`}
-                              >
-                                ▶
-                              </button>
-                            )
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <div className="terminal-logs">
-                  {logs.map((log, i) => (
-                    <p key={i} className="log-entry">{log}</p>
-                  ))}
-                </div>
-
-                {gameOver && (
-                  <div className={`game-over ${success ? 'success' : 'failure'}`}>
-                    {success ? 'HACK SUCCESSFUL' : 'HACK FAILED'}
-                    <button 
-                      onClick={() => window.location.reload()} 
-                      className="retry-btn"
-                    >
-                      RETRY
-                    </button>
-                  </div>
-                )}
-
-                {tutorialComplete && (
-                  <button 
-                    className="tutorial-restart-btn"
-                    onClick={() => {
-                      setShowTutorial(true);
-                      setTutorialStep(0);
-                    }}
-                  >
-                    SHOW TUTORIAL
-                  </button>
-                )}
-
-                {gameMode?.type === 'tutorial' && (
-                  <div className="tutorial-indicator">
-                    TRAINING MODE ACTIVE
-                  </div>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-
-        <div className="audio-controls">
-          <button 
-            className={`play-button ${isPlaying ? 'playing' : ''}`}
-            onClick={() => setIsPlaying(!isPlaying)}
-            title={isPlaying ? 'Stop Music' : 'Play Music'}
-          >
-            {isPlaying ? '⬛' : '▶'}
-          </button>
-          {isPlaying && (
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={volume}
-              onChange={(e) => setVolume(parseFloat(e.target.value))}
-              className="volume-slider"
-              title={`Volume: ${Math.round(volume * 100)}%`}
-            />
-          )}
-        </div>
-      </div>
+      <AppContent />
     </AudioProvider>
   );
 }
