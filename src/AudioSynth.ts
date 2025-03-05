@@ -133,19 +133,20 @@ export class AudioSynth {
     this.isPlaying = true;
     this.currentBeat = 0;
 
-    const audioContext = this.audioContext;
-    if (audioContext) {
-      audioContext.resume();
+    if (this.audioContext) {
+      this.audioContext.resume();
       
       const beatInterval = (60 / this.bpm) * 1000; // Convert BPM to milliseconds
       
       // Start the first beat immediately
-      this.playBeat(audioContext.currentTime);
+      this.playBeat(this.audioContext.currentTime);
       
-      // Schedule subsequent beats
+      // Schedule subsequent beats with looping
       this.interval = window.setInterval(() => {
-        if (this.isPlaying && audioContext) {
-          this.playBeat(audioContext.currentTime);
+        if (this.isPlaying && this.audioContext) {
+          this.playBeat(this.audioContext.currentTime);
+          // Reset currentBeat when reaching the end of the sequence
+          this.currentBeat = (this.currentBeat + 1) % 16; // Assuming 16-measure sequence
         }
       }, beatInterval);
     }

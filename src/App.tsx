@@ -661,8 +661,9 @@ function App() {
         <button 
           className={`play-button ${isPlaying ? 'playing' : ''}`}
           onClick={togglePlay}
+          title={isPlaying ? 'Stop Music' : 'Play Music'}
         >
-          {isPlaying ? '⬛ STOP' : '▶ PLAY'}
+          {isPlaying ? '🔇' : '🎵'}
         </button>
         {isPlaying && (
           <input
@@ -673,6 +674,7 @@ function App() {
             value={volume}
             onChange={handleVolumeChange}
             className="volume-slider"
+            title={`Volume: ${Math.round(volume * 100)}%`}
           />
         )}
       </div>
