@@ -580,17 +580,51 @@ function AppContent() {
                     <div className="progress-bar trace">
                       <span className="trace-icon phone">📱</span>
                       <div className="network-nodes">
-                        {[...Array(10)].map((_, index) => (
-                          <div
-                            key={index}
-                            className={`node ${
-                              traceLevel > index * 10 ? "active" : ""
-                            }`}
-                          >
-                            <div className="node-dot" />
-                            {index < 9 && <div className="node-line" />}
-                          </div>
-                        ))}
+                        {Array.from({ length: 10 }).map((_, index) => {
+                          const positions = ["high", "middle", "low", "middle"];
+                          const position = positions[index % positions.length];
+                          const icons = ["🌐", "💻", "📱", "🖥️"];
+                          const icon = icons[index % icons.length];
+
+                          // Calculate line width and angle based on next node position
+                          const nextPosition =
+                            positions[(index + 1) % positions.length];
+                          let lineStyle = {};
+
+                          if (index < 9) {
+                            const verticalDistance = getVerticalDistance(
+                              position,
+                              nextPosition
+                            );
+                            const width = Math.sqrt(
+                              Math.pow(80, 2) + Math.pow(verticalDistance, 2)
+                            );
+                            const angle =
+                              Math.atan2(verticalDistance, 80) *
+                              (180 / Math.PI);
+
+                            lineStyle = {
+                              width: `${width}px`,
+                              transform: `rotate(${angle}deg)`,
+                            };
+                          }
+
+                          return (
+                            <div
+                              key={index}
+                              className={`node ${position} ${
+                                traceLevel > index ? "active" : ""
+                              }`}
+                            >
+                              <div className="node-dot">
+                                <span className="node-icon">{icon}</span>
+                              </div>
+                              {index < 9 && (
+                                <div className="node-line" style={lineStyle} />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                       <span className="trace-icon police">👮</span>
                     </div>
@@ -867,6 +901,19 @@ function App() {
     <AudioProvider>
       <AppContent />
     </AudioProvider>
+  );
+}
+
+// Add this helper function
+function getVerticalDistance(currentPos: string, nextPos: string): number {
+  const positions = {
+    high: -15,
+    middle: 0,
+    low: 15,
+  };
+  return (
+    positions[nextPos as keyof typeof positions] -
+    positions[currentPos as keyof typeof positions]
   );
 }
 
